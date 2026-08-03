@@ -1,0 +1,102 @@
+{
+  "name": "sdd-gl",
+  "version": "0.2.0",
+  "description": "Spec-Driven Development with Gate/Loop protocol. Stack-agnostic process for features and fixes. Operates in Gate mode (human-controlled spec) and Loop mode (autonomous execution against inferred criteria). Supports Claude Code, Antigravity CLI, and Antigravity IDE.",
+  "author": "Gerardo Maidana",
+  "license": "MIT",
+  "homepage": "https://github.com/CharlyZeta/sdd-gl",
+
+  "platforms": {
+    "claude_code": {
+      "orchestrator": "CLAUDE.md",
+      "commands": ".claude/commands/",
+      "agents": ".claude/agents/",
+      "min_version": "1.0.0"
+    },
+    "antigravity_cli": {
+      "orchestrator": "AGENTS.md",
+      "skills": ".agents/skills/",
+      "install_path": "~/.gemini/antigravity-cli/plugins/sdd-gl/",
+      "min_version": "2.0.0"
+    },
+    "antigravity_ide": {
+      "orchestrator": "AGENTS.md",
+      "skills": ".agents/skills/",
+      "install_path": "~/.agents/skills/",
+      "min_version": "1.0.0"
+    }
+  },
+
+  "skills": [
+    {
+      "name": "sdd-gate",
+      "description": "Gate protocol — human-controlled spec refinement and consistency validation",
+      "file": ".agents/skills/sdd-gate/SKILL.md",
+      "also_as_command": ".claude/commands/sdd-gate.md"
+    },
+    {
+      "name": "sdd-loop",
+      "description": "Loop protocol — autonomous execution with persistence and crash recovery",
+      "file": ".agents/skills/sdd-loop/SKILL.md",
+      "also_as_command": ".claude/commands/sdd-loop.md"
+    },
+    {
+      "name": "sdd-feature",
+      "description": "Start a new feature work item",
+      "file": ".agents/skills/sdd-feature/SKILL.md",
+      "also_as_command": ".claude/commands/sdd-feature.md"
+    },
+    {
+      "name": "sdd-fix",
+      "description": "Start a bugfix work item with minimal Gate",
+      "file": ".agents/skills/sdd-fix/SKILL.md",
+      "also_as_command": ".claude/commands/sdd-fix.md"
+    },
+    {
+      "name": "sdd-status",
+      "description": "Show dashboard of all Contracts grouped by Status",
+      "file": ".agents/skills/sdd-status/SKILL.md",
+      "also_as_command": ".claude/commands/sdd-status.md"
+    }
+  ],
+
+  "subagent_skills": [
+    {
+      "name": "sdd-requirements-agent",
+      "file": ".agents/skills/sdd-requirements-agent/SKILL.md",
+      "also_as_agent": ".claude/agents/requirements-agent.md",
+      "operates_in": "GATE"
+    },
+    {
+      "name": "sdd-reviewer-agent",
+      "file": ".agents/skills/sdd-reviewer-agent/SKILL.md",
+      "also_as_agent": ".claude/agents/reviewer-agent.md",
+      "operates_in": "GATE+LOOP"
+    },
+    {
+      "name": "sdd-coder-agent",
+      "file": ".agents/skills/sdd-coder-agent/SKILL.md",
+      "also_as_agent": ".claude/agents/coder-agent.md",
+      "operates_in": "LOOP"
+    },
+    {
+      "name": "sdd-tester-agent",
+      "file": ".agents/skills/sdd-tester-agent/SKILL.md",
+      "also_as_agent": ".claude/agents/tester-agent.md",
+      "operates_in": "LOOP"
+    }
+  ],
+
+  "protocol": {
+    "contract_format": "protocol/contract.md",
+    "gate_protocol": "protocol/gate.md",
+    "loop_protocol": "protocol/loop.md",
+    "completion_map_format": "# [name]|[test-id]|[agent]|[❌|⏳|✅]"
+  },
+
+  "structure": {
+    "contracts_dir": "contracts/",
+    "protocol_dir": "protocol/",
+    "stack_file": "stack.md"
+  }
+}

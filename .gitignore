@@ -1,0 +1,9 @@
+# Contratos resueltos (opcional moverlos a un archivo)
+# contracts/RESOLVED/
+
+# Stack local (no commitear si tiene datos sensibles)
+# stack.md
+
+# OS
+.DS_Store
+Thumbs.db
