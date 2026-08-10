@@ -27,7 +27,7 @@ If Status is APPROVED and Mode is LOOP → do not activate. Tell the user to use
 ## Execution steps
 
 1. Read the target Contract from `contracts/[ID].md`
-2. Run the checklist from `protocol/gate.md` — one section at a time
+2. Check the Contract ID (FEAT-XXXX vs. FIX-XXXX) and run the corresponding checklist from `protocol/gate.md` — one section at a time
 3. If a section is incomplete → complete it and STOP. Do not continue to the next section.
 4. Run consistency check (BR vs AC contradictions, unverifiable criteria, unresolved Ambiguity Log items)
 5. If contradiction found → write to Ambiguity Log and STOP. Present options to the human.

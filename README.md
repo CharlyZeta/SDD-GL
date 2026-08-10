@@ -135,7 +135,6 @@ COMPLETION MAP: FEAT-0001
 | Alternative Flow (AF-XX) | 1 unit test per AF |
 | Business Rule (BR-XXX) | 1 validation unit test per BR |
 | Acceptance Criterion (AC-XXX) | Minimum 1 verifiable assertion per AC |
-| Entity with Invariant | 1 model integrity test |
 
 > [!TIP]
 > The Loop will not finish execution until every item in the Completion Map is successfully resolved (`✅`). Test coverage is not determined by a generic percentage, but directly mapped to the requirements defined in the contract.

@@ -134,7 +134,6 @@ COMPLETION MAP: FEAT-0001
 | Flujo Alternativo (AF-XX) | 1 prueba unitaria por cada AF |
 | Regla de Negocio (BR-XXX) | 1 prueba unitaria de validación por cada BR |
 | Criterio de Aceptación (AC-XXX) | Mínimo 1 aserción verificable por cada AC |
-| Entidad con invariante | 1 prueba de integridad sobre el modelo |
 
 > [!TIP]
 > El Loop no finaliza su ejecución hasta que todos los elementos marcados en el Completion Map se resuelvan satisfactoriamente (`✅`). La cobertura de pruebas no está determinada por un porcentaje genérico, sino directamente por los requisitos especificados en el contrato.

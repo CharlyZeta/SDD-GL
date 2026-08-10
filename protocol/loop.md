@@ -45,8 +45,9 @@ Secuencia por ítem:
 1. Seleccionar primer ítem `❌` o `⏳` del Completion Map
 2. Escribir `⏳` en el Contract → **persistir en disco**
 3. Delegar al agente correspondiente
-4. Si el test pasa → escribir `✅` → **persistir en disco** → continuar
-5. Si el test falla → reintentar (máx. 3 veces) → si sigue fallando → escalar
+4. Si el agente retorna `BLOCKED` o `NOT_WRITABLE` → escalar de inmediato a Gate (ver sección Ambigüedad)
+5. Si el test pasa → escribir `✅` → **persistir en disco** → continuar
+6. Si el test falla → reintentar (máx. 3 veces) → si sigue fallando tras 3 intentos → invocar reviewer-agent
 
 Si al arrancar hay ítems `⏳` en el mapa, el proceso fue interrumpido:
 reanudar desde el primer `⏳` sin re-ejecutar los `✅`.
@@ -66,6 +67,8 @@ LOOP:
     construir Completion Map desde Contract
     persistir en disco
 
+  ReviewerRetries = 0
+
   WHILE hay ítems ❌ o ⏳:
     ítem = primer ❌ o ⏳ del mapa
     escribir ⏳ en Contract → persistir
@@ -77,6 +80,12 @@ LOOP:
         AC-XXX         → tester-agent
         Main Flow      → coder-agent + tester-agent
 
+      si el agente responde BLOCKED o responde NOT_WRITABLE:
+        escribir en Ambiguity Log: "- [ ] [ID-ítem]: [motivo del bloqueo]"
+        escribir ❌ en Contract → persistir
+        cambiar Mode: GATE y Status: DRAFT → persistir
+        notificar al humano y DETENER
+
       si test pasa:
         escribir ✅ en Contract → persistir
         break
@@ -86,13 +95,25 @@ LOOP:
         coder-agent corrige implementación
 
     si intentos == 3 y sigue fallando:
-      reviewer-agent analiza causa
-      si es ambigüedad real:
-        escribir en Ambiguity Log
+      si ReviewerRetries >= 1:
+        // Ya se intentó una corrección guiada por el Reviewer y falló. Escalar directamente.
+        escribir en Ambiguity Log: "- [ ] [ID-ítem]: Falla persistente tras reintentos guiados por Reviewer."
         escribir ❌ en Contract → persistir
-        cambiar Mode: GATE → persistir
-        notificar al humano con Completion Map actual
-        DETENER
+        cambiar Mode: GATE y Status: DRAFT → persistir
+        notificar al humano y DETENER
+      sino:
+        reviewer-agent analiza causa
+        si es ambigüedad real:
+          escribir en Ambiguity Log: "- [ ] [ID-ítem]: [descripción del bloqueo]"
+          escribir ❌ en Contract → persistir
+          cambiar Mode: GATE y Status: DRAFT → persistir
+          notificar al humano y DETENER
+        si es error de implementación (RETRY):
+          ReviewerRetries++
+          // El Reviewer da una sugerencia específica. Se inicia un nuevo y único ciclo de hasta 3 intentos
+          intentos = 0
+          coder-agent aplica la sugerencia del reviewer
+          continue
 
   COMPLETION REPORT
 ```

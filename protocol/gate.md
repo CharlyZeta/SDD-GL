@@ -24,7 +24,9 @@ Detenerse. Esperar revisión humana antes de continuar.
 
 ### Paso 2 — Si existe Contract en DRAFT: checklist estructural
 
-Verificar cada sección:
+El checklist difiere según el tipo de contrato (Feature `FEAT` vs Bugfix `FIX`):
+
+#### Para contratos de Feature (ID: FEAT-XXXX):
 
 | Sección             | Condición mínima                                          |
 |---------------------|-----------------------------------------------------------|
@@ -34,7 +36,15 @@ Verificar cada sección:
 | Acceptance Criteria | Al menos 1 AC-XXX en formato GIVEN/WHEN/THEN              |
 | Ambiguity Log       | Sin ítems `- [ ]` sin resolver                            |
 
-Si alguna condición falla → completar **una sola sección** y detenerse.
+#### Para contratos de Bugfix (ID: FIX-XXXX):
+
+| Sección             | Condición mínima                                          |
+|---------------------|-----------------------------------------------------------|
+| Reproduction Steps  | Al menos 3 pasos numerados                                |
+| Acceptance Criteria | Al menos 1 AC-XXX (por ejemplo, AC-001) en GIVEN/WHEN/THEN |
+| Ambiguity Log       | Sin ítems `- [ ]` sin resolver                            |
+
+Si alguna condición del checklist correspondiente falla → completar **una sola sección** y detenerse.
 No avanzar más de una sección por iteración.
 
 ### Paso 3 — Análisis de consistencia interna
@@ -54,8 +64,9 @@ Detenerse. No presentar como aprobable hasta que el humano resuelva.
 
 ### Paso 4 — Presentar resumen pre-aprobación
 
-Cuando el Contract pasa el checklist y la consistencia:
+Cuando el Contract pasa el checklist correspondiente y la consistencia:
 
+#### Para FEAT-XXXX:
 ```
 ✅ Contract completo y consistente: contracts/[ID].md
 
@@ -72,7 +83,23 @@ Criterios que inferirá el Loop:
   - N assertions (AC-XXX)
   Total: N criterios de completitud
 
-⏸️  HO-GATE: cambiá Status: APPROVED y Mode: LOOP para iniciar el Loop.
+⏸️  HO-GATE: cambia Status: APPROVED y Mode: LOOP para iniciar el Loop.
+```
+
+#### Para FIX-XXXX:
+```
+✅ Contract completo y consistente: contracts/[ID].md
+
+Resumen:
+  - N pasos en Reproduction Steps
+  - N Acceptance Criteria (AC-001..AC-N)
+
+Criterios que inferirá el Loop:
+  - 1 integration test (Reproduction Steps)
+  - N assertions (AC-XXX)
+  Total: N criterios de completitud
+
+⏸️  HO-GATE: cambia Status: APPROVED y Mode: LOOP para iniciar el Loop.
 ```
 
 ---

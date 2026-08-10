@@ -34,10 +34,14 @@ If Status is DRAFT or Mode is GATE → do not activate. Tell the user to use /sd
 3. For each ❌ or ⏳ item in order:
    a. Write ⏳ to the Contract line → persist to disk immediately
    b. Delegate to the appropriate subagent (see delegation table below)
-   c. If PASS → write ✅ → persist
-   d. If FAIL → retry up to 3 times with coder-agent fix attempts
-   e. If 3 failures → invoke sdd-reviewer-agent to determine: RETRY or AMBIGUITY
-   f. If AMBIGUITY → write to Ambiguity Log → write ❌ → change Mode: GATE → persist → STOP
+   c. If the subagent returns `BLOCKED` (Coder) or `NOT_WRITABLE` (Tester) → write to Ambiguity Log → write ❌ → change Mode: GATE, Status: DRAFT → persist → STOP
+   d. If PASS → write ✅ → persist
+   e. If FAIL → retry up to 3 times with coder-agent fix attempts
+   f. If 3 failures:
+      - If a reviewer-guided retry cycle was already attempted for this item → write persistent failure to Ambiguity Log → write ❌ → change Mode: GATE, Status: DRAFT → persist → STOP
+      - Else → invoke sdd-reviewer-agent to determine: RETRY or AMBIGUITY
+        - If AMBIGUITY → write to Ambiguity Log → write ❌ → change Mode: GATE, Status: DRAFT → persist → STOP
+        - If RETRY → allow 1 additional cycle of up to 3 coder fix attempts using the reviewer's specific suggestions.
 4. When all items are ✅ → write Completion Report → change Status: RESOLVED → persist
 
 ## Delegation table

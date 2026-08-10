@@ -56,7 +56,6 @@ Legible para el humano en modo Gate, parseable por el Loop para inferir criterio
 | Alternative Flow AF-XX     | 1 unit test por cada AF-XX                |
 | Business Rule BR-XXX       | 1 unit test de validación por cada BR-XXX |
 | Acceptance Criteria AC-XXX | 1 assertion verificable por cada AC-XXX   |
-| Entidad con invariante     | 1 test de integridad por invariante       |
 
 ---
 
