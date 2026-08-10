@@ -1,5 +1,7 @@
 # SDD-GL — Spec-Driven Development: Gate/Loop
 
+![SDD-GL Cover](assets/sdd-gl-cover.png)
+
 [![Version](https://img.shields.io/badge/version-0.1.0-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-orange)](https://docs.claude.ai/code)
@@ -325,6 +327,56 @@ to a destination account, debiting and crediting the respective balances.
 # AC-001    | assertion:FEAT-0001-ac001         | tester       | ❌
 # AC-002    | assertion:FEAT-0001-ac002         | tester       | ❌
 # AC-003    | assertion:FEAT-0001-ac003         | tester       | ❌
+```
+
+---
+
+## Case Study: End-to-End Framework Validation
+
+To verify the robustness and correctness of the SDD-GL state machine, agents, and retry loops, we validated the entire framework lifecycle using a complex **Escrow Agreement Account** contract in a test sandbox (validated under QA run ID `62b817c9-f8bd-425d-af0a-84c642151b66`).
+
+### Validation Lifecycle Phases
+
+#### 1. Gate Mode & Contradiction Detection
+* **Setup**: We created a draft contract (`FEAT-9999.md` in `Status: DRAFT` / `Mode: GATE`).
+* **Conflict Injection**: We specified `BR-001` (escrow amount must be positive) but wrote a conflicting `AC-002` (escrow initialization succeeds with an amount of 0).
+* **Validation**: The `reviewer-agent` ran a consistency check and successfully detected and blocked the contradiction, writing to the Ambiguity Log:
+  ```markdown
+  - [ ] BR-001 vs AC-002: Escrow amount must be positive, but AC-002 specifies that amount 0 succeeds.
+  ```
+* **Resolution**: We corrected `AC-002` to expect initialization failure. The consistency check then passed, generating the pre-approval summary.
+
+#### 2. Loop Mode & Guided Coder Retry
+* **Activation**: We moved the contract to `Status: APPROVED` and `Mode: LOOP`. The system auto-generated a Completion Map with 8 testable criteria.
+* **Defect Injection**: We injected a bug in the escrow system fee calculation (hardcoded a flat fee of `1.5` instead of `1.5%` of the deposited amount).
+* **TDD Loop**: Running the test suite failed `AC-001`. After 3 failed implementation runs, the loop invoked the `reviewer-agent`, which analyzed the test output and suggested the exact formula fix:
+  ```javascript
+  this.feeCollected = 0.015 * this.deposited;
+  this.releasedAmount = this.deposited - this.feeCollected;
+  ```
+* **Application**: The `coder-agent` applied the fix, and all 8 tests successfully passed.
+
+#### 3. Loop Block & Gate Escalation
+* **Ambiguity Injection**: We added a dispute penalty rule (`BR-004`) without defining who pays the penalty or how disputes are resolved.
+* **Escalation**: The `tester-agent` flagged the rule as `NOT_WRITABLE` due to missing specs. The Loop immediately halted execution, logged the issue in the `Ambiguity Log`, and rolled the contract back to `DRAFT` / `GATE` mode:
+  ```markdown
+  - [ ] BR-004: The dispute penalty fee logic is ambiguous. The contract does not define how a dispute is resolved...
+  ```
+* **Resolution**: We clarified the dispute logic in the contract, re-approved to `LOOP` mode, implemented the code, and resumed execution.
+
+#### 4. Final Verification
+All 9 unit, integration, and assertion tests passed successfully, transitioning the contract to `Status: RESOLVED`:
+```bash
+✔ Main Flow: Escrow lifecycle integration (1.34ms)
+✔ AF-01: Dispute period expires without action -> auto-release (0.19ms)
+✔ AF-02: Refund requested before dispute period expires -> block (0.55ms)
+✔ BR-001: Escrow amount must be positive (0.24ms)
+✔ BR-002: System fee of 1.5% is deducted upon release (0.24ms)
+✔ BR-003: Dispute period must be between 1 and 30 days (1.49ms)
+✔ BR-004: Dispute penalty fee of 3% is deducted upon dispute resolution favoring Seller (0.33ms)
+✔ AC-001: GIVEN dispute period 10 days WHEN release called THEN fee is 1.5% and remaining transferred (0.23ms)
+✔ AC-002: GIVEN escrow with amount 0 WHEN initialized THEN it fails (0.27ms)
+ℹ tests 9 | pass 9 | fail 0
 ```
 
 ---

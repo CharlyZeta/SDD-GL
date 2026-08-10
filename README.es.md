@@ -1,5 +1,7 @@
 # SDD-GL — Desarrollo Guiado por Especificaciones: Gate/Loop
 
+![SDD-GL Portada](assets/sdd-gl-cover.png)
+
 [![Version](https://img.shields.io/badge/version-0.1.0-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-orange)](https://docs.claude.ai/code)
@@ -324,6 +326,56 @@ hacia una cuenta destino, debitando y acreditando los saldos correspondientes.
 # AC-001    | assertion:FEAT-0001-ac001         | tester       | ❌
 # AC-002    | assertion:FEAT-0001-ac002         | tester       | ❌
 # AC-003    | assertion:FEAT-0001-ac003         | tester       | ❌
+```
+
+---
+
+## Caso de Estudio: Validación End-to-End del Framework
+
+Para verificar la robustez y consistencia de la máquina de estados, los agentes y los bucles de reintentos de SDD-GL, validamos el ciclo de vida completo del framework utilizando un contrato complejo de **Cuenta de Fideicomiso (Escrow Agreement)** en un entorno de pruebas (validado bajo la ejecución de QA ID `62b817c9-f8bd-425d-af0a-84c642151b66`).
+
+### Fases del Ciclo de Validación
+
+#### 1. Modo Gate y Detección de Contradicciones
+* **Configuración**: Creamos un contrato en borrador (`FEAT-9999.md` en `Status: DRAFT` / `Mode: GATE`).
+* **Inyección de Conflicto**: Especificamos la regla `BR-001` (el monto del fideicomiso debe ser positivo) pero redactamos un criterio incompatible `AC-002` (la inicialización del fideicomiso tiene éxito con un monto de 0).
+* **Validación**: El `reviewer-agent` ejecutó el análisis de consistencia, detectó y bloqueó la contradicción con éxito, y la registró en el log de ambigüedades:
+  ```markdown
+  - [ ] BR-001 vs AC-002: Escrow amount must be positive, but AC-002 specifies that amount 0 succeeds.
+  ```
+* **Resolución**: Corregimos `AC-002` para esperar un fallo de inicialización. Tras esto, la validación pasó con éxito y se generó el resumen pre-aprobado.
+
+#### 2. Modo Loop y Reintento Guiado del Programador
+* **Activación**: Cambiamos el contrato a `Status: APPROVED` y `Mode: LOOP`. El sistema autogeneró un Completion Map con 8 criterios de prueba.
+* **Inyección de Defecto**: Introdujimos un error de programación en el cálculo de comisiones (comisión fija de `1.5` en lugar del `1.5%` del depósito).
+* **Bucle TDD**: Ejecutar las pruebas falló en `AC-001`. Tras 3 intentos fallidos de implementación, el Loop invocó al `reviewer-agent`, el cual analizó el error y sugirió la fórmula correcta al programador:
+  ```javascript
+  this.feeCollected = 0.015 * this.deposited;
+  this.releasedAmount = this.deposited - this.feeCollected;
+  ```
+* **Aplicación**: El `coder-agent` aplicó la sugerencia de corrección del revisor y las 8 pruebas pasaron exitosamente.
+
+#### 3. Bloqueo en Loop y Escalado a Gate
+* **Inyección de Ambigüedad**: Añadimos una regla de penalización por disputa (`BR-004`) sin definir el mecanismo de resolución de disputas ni quién pagaría dicha comisión.
+* **Escalado**: El `tester-agent` marcó la regla como `NOT_WRITABLE` (no escribible) debido a la falta de especificación. El Loop detuvo la ejecución inmediatamente, registró el bloqueo en el `Ambiguity Log` y regresó el contrato a `DRAFT` / `GATE`:
+  ```markdown
+  - [ ] BR-004: The dispute penalty fee logic is ambiguous. The contract does not define how a dispute is resolved...
+  ```
+* **Resolución**: Completamos los detalles de resolución de disputas en el contrato, re-aprobamos a modo `LOOP`, el coder implementó el código correspondiente y se reanudó la ejecución.
+
+#### 4. Final Estructurado de Pruebas
+Las 9 pruebas (unitarias, de integración y aserciones) pasaron con éxito, transicionando el contrato a `Status: RESOLVED`:
+```bash
+✔ Main Flow: Escrow lifecycle integration (1.34ms)
+✔ AF-01: Dispute period expires without action -> auto-release (0.19ms)
+✔ AF-02: Refund requested before dispute period expires -> block (0.55ms)
+✔ BR-001: Escrow amount must be positive (0.24ms)
+✔ BR-002: System fee of 1.5% is deducted upon release (0.24ms)
+✔ BR-003: Dispute period must be between 1 and 30 days (1.49ms)
+✔ BR-004: Dispute penalty fee of 3% is deducted upon dispute resolution favoring Seller (0.33ms)
+✔ AC-001: GIVEN dispute period 10 days WHEN release called THEN fee is 1.5% and remaining transferred (0.23ms)
+✔ AC-002: GIVEN escrow with amount 0 WHEN initialized THEN it fails (0.27ms)
+ℹ tests 9 | pass 9 | fail 0
 ```
 
 ---
