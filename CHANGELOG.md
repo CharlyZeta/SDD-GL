@@ -37,3 +37,13 @@
 - contracts/ — same format on all platforms
 - Gate/Loop logic — identical regardless of platform
 - Completion Map format — identical
+
+## [0.2.1] — 2026-08-10
+
+### Fixed — Architectural and Protocol Enhancements
+
+- **Split Gate Checklist**: Differentiated validation criteria in Gate mode between Features (`FEAT`) and Bugfixes (`FIX`). Bugfixes now require only Reproduction Steps and one Acceptance Criterion (`AC-001`), preventing them from getting stuck in Gate.
+- **Immediate Escalation on Blockers**: Updated Loop execution logic to intercept `BLOCKED` (from coder-agent) and `NOT_WRITABLE` (from tester-agent) states, immediately triggering a return to Gate mode via the Ambiguity Log to prevent useless retry cycles.
+- **Reviewer Retry Limit**: Introduced a limit of 1 reviewer-guided retry cycle in Loop mode to prevent infinite feedback loops.
+- **Aligned Entity Invariants**: Removed the entity test row from criteria inference tables to keep the framework lightweight and avoid logical discrepancies.
+- **QA Validated**: Architectural fixes reviewed and validated by the `sdd-tester-agent`.

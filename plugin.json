@@ -1,6 +1,6 @@
 {
   "name": "sdd-gl",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Spec-Driven Development with Gate/Loop protocol. Stack-agnostic process for features and fixes. Operates in Gate mode (human-controlled spec) and Loop mode (autonomous execution against inferred criteria). Supports Claude Code, Antigravity CLI, and Antigravity IDE.",
   "author": "Gerardo Maidana",
   "license": "MIT",
