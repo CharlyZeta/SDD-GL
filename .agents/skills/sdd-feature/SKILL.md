@@ -35,6 +35,7 @@ Start a new FEAT work item. Create the Contract in DRAFT and enter Gate mode.
 # ID: FEAT-XXXX
 # Status: DRAFT
 # Mode: GATE
+# Gate-Mode: STRICT
 
 ## Intent
 [Inferred from user description]

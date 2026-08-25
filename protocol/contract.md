@@ -12,6 +12,7 @@ Legible para el humano en modo Gate, parseable por el Loop para inferir criterio
 # ID: [FEAT|FIX]-XXXX
 # Status: DRAFT | APPROVED | RESOLVED
 # Mode: GATE | LOOP
+# Gate-Mode: EXPRESS | STRICT
 
 ## Intent
 <!-- Qué problema resuelve. Una o dos oraciones. -->

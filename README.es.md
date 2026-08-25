@@ -2,8 +2,9 @@
 
 ![SDD-GL Portada](assets/sdd-gl-cover.png)
 
-[![Version](https://img.shields.io/badge/version-0.1.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.3.0-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![MCP Protocol](https://img.shields.io/badge/MCP-Protocol%20Ready-purple)](mcp/sdd-gl-mcp-spec.md)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-orange)](https://docs.claude.ai/code)
 [![Stack](https://img.shields.io/badge/stack-agnostic-lightgrey)](#3-configuración-del-stack-recomendado)
 
@@ -103,12 +104,14 @@ flowchart TD
 ```
 
 > [!IMPORTANT]
-> **¿Por qué el paso Gate no se aprueba automáticamente?**
-> Porque la especificación requiere decisiones conceptuales y de negocio que la IA no debe tomar por sí sola (por ejemplo: definir si un valor de cero es válido o determinar si una cuenta de destino puede ser de otro usuario). Estas decisiones exigen juicio humano. El **HO-Gate** (Human Approval Gate) es el mecanismo de control que previene que las ambigüedades de diseño se trasladen de forma inadvertida al código fuente.
+> **Gobernanza Adaptativa en Gate (`EXPRESS` vs `STRICT`)**:
+> Para eliminar la *fatiga de revisión de specs*, SDD-GL v0.3.0 soporta dos modos de gobernanza:
+> - **⚡ `GATE-EXPRESS`**: Utilizado automáticamente para correcciones de bugs (`FIX-XXXX`) y features atómicas. Genera todas las secciones y validaciones de consistencia en **1 solo paso** para una aprobación humana inmediata.
+> - **🛡️ `GATE-STRICT`**: Reservado para features de dominio complejo (`FEAT-XXXX`) con múltiples entidades. Guía al desarrollador sección por sección a través de puntos de control de diseño progresivos.
 
 > [!NOTE]
-> **¿Por qué el Loop no solicita autorizaciones intermedias?**
-> Una vez que la especificación está definida y cerrada de forma consistente, requerir confirmaciones adicionales para escribir pruebas o implementar lógica introduce demoras innecesarias. El Loop opera con la autonomía exacta definida en la especificación: si encuentra una ambigüedad, escala inmediatamente; si el escenario está contemplado, lo implementa autónomamente.
+> **Glass Box Loop (Telemetría y Auditoría Transparente)**:
+> A diferencia de los agentes autónomos de tipo "caja negra", el Loop escribe un registro de auditoría de ejecución transparente para cada paso en `.sdd/runs/[ID]-[timestamp].md`. El desarrollador puede inspeccionar en tiempo real los archivos de contexto leídos, los diffs generados, las salidas del test runner, el conteo de reintentos y las justificaciones técnicas de cada decisión.
 
 ---
 

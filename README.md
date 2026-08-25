@@ -2,8 +2,9 @@
 
 ![SDD-GL Cover](assets/sdd-gl-cover.png)
 
-[![Version](https://img.shields.io/badge/version-0.1.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.3.0-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![MCP Protocol](https://img.shields.io/badge/MCP-Protocol%20Ready-purple)](mcp/sdd-gl-mcp-spec.md)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-orange)](https://docs.claude.ai/code)
 [![Stack](https://img.shields.io/badge/stack-agnostic-lightgrey)](#3-recommended-stack-configuration)
 
@@ -104,12 +105,14 @@ flowchart TD
 ```
 
 > [!IMPORTANT]
-> **Why is the Gate phase not automatically approved?**
-> Because the specification involves conceptual and business logic decisions that the AI should not make on its own (for instance, defining whether a zero amount is valid, or determining if a destination account can belong to a different user). These decisions require human judgment. The **HO-Gate** (Human Approval Gate) is the governance mechanism that prevents design ambiguities from silently bleeding into the codebase.
+> **Adaptive Gate Governance (`EXPRESS` vs `STRICT`)**:
+> To eliminate *spec review fatigue*, SDD-GL v0.3.0 supports two gate governance modes:
+> - **⚡ `GATE-EXPRESS`**: Automatically used for bugfixes (`FIX-XXXX`) and atomic features. Generates all required sections and consistency checks in **1 single step** for instant human approval.
+> - **🛡️ `GATE-STRICT`**: Reserved for complex, multi-entity domain features (`FEAT-XXXX`). Guides the developer section by section through progressive design checkpoints.
 
 > [!NOTE]
-> **Why doesn't the Loop request intermediate approvals?**
-> Once the specification is defined and closed consistently, demanding additional confirmation to write tests or implement logic introduces unnecessary friction. The Loop operates within the exact boundaries defined by the specification: if it hits an ambiguity, it escalates immediately; if the scenario is covered, it implements it autonomously.
+> **Glass Box Loop (Auditable Telemetry)**:
+> Unlike black-box autonomous agents, the Loop writes a transparent execution audit trail for every single step to `.sdd/runs/[ID]-[timestamp].md`. Developers can inspect the exact context files read, the generated diffs, test runner outputs, retry counts, and technical rationales in real time.
 
 ---
 

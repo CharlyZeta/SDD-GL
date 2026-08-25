@@ -22,11 +22,21 @@ El único output válido es un Contract más completo o un Contract listo para a
 Generar Contract en DRAFT con Intent y Use Case básico inferido de la descripción.
 Detenerse. Esperar revisión humana antes de continuar.
 
-### Paso 2 — Si existe Contract en DRAFT: checklist estructural
+### Paso 2 — Si existe Contract en DRAFT: selección de perfil y checklist estructural
 
-El checklist difiere según el tipo de contrato (Feature `FEAT` vs Bugfix `FIX`):
+El modo Gate evalúa el perfil de gobernanza especificado en el encabezado `# Gate-Mode: EXPRESS | STRICT` (o inferido según el tipo de contrato):
 
-#### Para contratos de Feature (ID: FEAT-XXXX):
+#### Perfiles de Gobernanza:
+*   **⚡ GATE-EXPRESS (Modo Rápido / Fatiga Cero)**:
+    *   **Cuándo se usa**: Por defecto en `FIX-XXXX` (bugfixes), o en `FEAT-XXXX` cuando se especifica `# Gate-Mode: EXPRESS` (features atómicas, 1 sola entidad).
+    *   **Comportamiento**: El agente completa **todas las secciones requeridas en un solo paso**, ejecuta la validación de consistencia y presenta inmediatamente el resumen pre-aprobación. Requiere solo **1 punto de revisión humana**.
+*   **🛡️ GATE-STRICT (Modo Riguroso / Dominio Complejo)**:
+    *   **Cuándo se usa**: Por defecto en `FEAT-XXXX` cuando no se indica lo contrario, o con `# Gate-Mode: STRICT` (lógica financiera, múltiples entidades, reglas críticas).
+    *   **Comportamiento**: Completa **una sola sección por iteración** y espera validación intermedia humana antes de avanzar a la siguiente.
+
+#### Checklists Estructurales:
+
+##### A. Para contratos de Feature (ID: FEAT-XXXX):
 
 | Sección             | Condición mínima                                          |
 |---------------------|-----------------------------------------------------------|
@@ -36,7 +46,7 @@ El checklist difiere según el tipo de contrato (Feature `FEAT` vs Bugfix `FIX`)
 | Acceptance Criteria | Al menos 1 AC-XXX en formato GIVEN/WHEN/THEN              |
 | Ambiguity Log       | Sin ítems `- [ ]` sin resolver                            |
 
-#### Para contratos de Bugfix (ID: FIX-XXXX):
+##### B. Para contratos de Bugfix (ID: FIX-XXXX):
 
 | Sección             | Condición mínima                                          |
 |---------------------|-----------------------------------------------------------|
@@ -44,8 +54,7 @@ El checklist difiere según el tipo de contrato (Feature `FEAT` vs Bugfix `FIX`)
 | Acceptance Criteria | Al menos 1 AC-XXX (por ejemplo, AC-001) en GIVEN/WHEN/THEN |
 | Ambiguity Log       | Sin ítems `- [ ]` sin resolver                            |
 
-Si alguna condición del checklist correspondiente falla → completar **una sola sección** y detenerse.
-No avanzar más de una sección por iteración.
+*Regla de avance:* En modo `STRICT`, si alguna condición falla → completar **una sola sección** y detenerse. En modo `EXPRESS` → completar todas las secciones pendientes y avanzar directo a la consistencia.
 
 ### Paso 3 — Análisis de consistencia interna
 

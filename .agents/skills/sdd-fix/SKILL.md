@@ -36,6 +36,7 @@ Start a FIX work item. Minimal Gate — only requires Reproduction Steps and AC-
 # ID: FIX-XXXX
 # Status: DRAFT
 # Mode: GATE
+# Gate-Mode: EXPRESS
 
 ## Intent
 [Bug description and expected behavior]

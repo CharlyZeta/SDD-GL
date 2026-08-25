@@ -47,3 +47,13 @@
 - **Reviewer Retry Limit**: Introduced a limit of 1 reviewer-guided retry cycle in Loop mode to prevent infinite feedback loops.
 - **Aligned Entity Invariants**: Removed the entity test row from criteria inference tables to keep the framework lightweight and avoid logical discrepancies.
 - **QA Validated**: Architectural fixes reviewed and validated by the `sdd-tester-agent`.
+
+## [0.3.0] — 2026-08-25
+
+### Added — Adaptive Governance, Glass Box Telemetry, Presets & MCP Standard
+
+- **Adaptive Gate Governance (`GATE-EXPRESS` vs. `GATE-STRICT`)**: Eliminates spec review fatigue by enabling 1-step approvals for bugfixes and small tasks, while reserving rigorous section-by-section reviews for complex domain features.
+- **Glass Box Loop (Audit & Telemetry)**: The Loop now generates an auditable execution trace in `.sdd/runs/[ID]-[timestamp].md` detailing context files inspected, diffs generated, test runner outputs, retry counts, and decision rationales.
+- **Official Stack Presets**: Added zero-config presets in `presets/` for Java Spring Boot 3.x (Hexagonal/DDD), Python FastAPI (Pydantic v2/Async), and TypeScript Node.js/Bun.
+- **Model Context Protocol (MCP) Server Specification**: Added `mcp/sdd-gl-mcp-spec.md` with standard JSON-RPC tool schemas (`sdd_create_contract`, `sdd_validate_gate`, `sdd_step_loop`, `sdd_log_ambiguity`, `sdd_get_status`), making SDD-GL 100% agnostic to any IDE or LLM runtime.
+

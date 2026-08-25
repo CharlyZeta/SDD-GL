@@ -151,6 +151,35 @@ Al reanudarse después de que el humano resuelve una ambigüedad y re-aprueba:
 
 ---
 
+## Glass Box Loop: Registro de Auditoría y Telemetría
+
+Para eliminar la opacidad ("caja negra") del modo Loop, el orquestador genera y actualiza un archivo de auditoría transparente para cada ejecución en:
+`.sdd/runs/[ID]-[timestamp].md`
+
+### Estructura del Registro de Auditoría:
+Cada paso del bucle añade una entrada detallada:
+
+```markdown
+# EXECUTION AUDIT: [ID]
+# Started: [timestamp]
+
+## Step: [Item-ID] (ej. BR-001) | Attempt: [N/3]
+- **Agent Invoked**: `sdd-coder-agent` / `sdd-tester-agent`
+- **Context Inspected**: [archivos leídos por el agente]
+- **Diff Generated**:
+  ```diff
+  [diff block o código añadido]
+  ```
+- **Test Command**: `[comando ejecutado, ej. npm test / mvn test]`
+- **Runner Output**: `[salida exacta del test runner]`
+- **Result**: `✅ PASS` | `❌ FAIL` | `⚠️ BLOCKED/NOT_WRITABLE`
+- **Decision Rationale**: `[razón técnica del cambio o sugerencia del reviewer]`
+```
+
+Este registro permite al desarrollador inspeccionar en cualquier momento exactamente qué hizo la IA, qué archivos leyó y por qué tomó cada decisión.
+
+---
+
 ## Completion Report
 
 Cuando todos los ítems están `✅`:

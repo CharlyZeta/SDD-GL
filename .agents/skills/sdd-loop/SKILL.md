@@ -31,18 +31,20 @@ If Status is DRAFT or Mode is GATE → do not activate. Tell the user to use /sd
 2. Check if Completion Map already exists (lines starting with `# ` containing `|`)
    - YES → load it as-is. Check for ⏳ items (interrupted) → resume from first ⏳
    - NO → build Completion Map from the Contract using the inference table in `protocol/contract.md`
-3. For each ❌ or ⏳ item in order:
+3. Initialize the Glass Box audit run file at `.sdd/runs/[ID]-[timestamp].md`
+4. For each ❌ or ⏳ item in order:
    a. Write ⏳ to the Contract line → persist to disk immediately
    b. Delegate to the appropriate subagent (see delegation table below)
-   c. If the subagent returns `BLOCKED` (Coder) or `NOT_WRITABLE` (Tester) → write to Ambiguity Log → write ❌ → change Mode: GATE, Status: DRAFT → persist → STOP
-   d. If PASS → write ✅ → persist
-   e. If FAIL → retry up to 3 times with coder-agent fix attempts
-   f. If 3 failures:
+   c. Append entry to the Glass Box audit file with: `files_read`, `diff_generated`, `test_command`, `runner_output`, and `decision_rationale`
+   d. If the subagent returns `BLOCKED` (Coder) or `NOT_WRITABLE` (Tester) → write to Ambiguity Log → write ❌ → change Mode: GATE, Status: DRAFT → persist → STOP
+   e. If PASS → write ✅ → persist
+   f. If FAIL → retry up to 3 times with coder-agent fix attempts
+   g. If 3 failures:
       - If a reviewer-guided retry cycle was already attempted for this item → write persistent failure to Ambiguity Log → write ❌ → change Mode: GATE, Status: DRAFT → persist → STOP
       - Else → invoke sdd-reviewer-agent to determine: RETRY or AMBIGUITY
         - If AMBIGUITY → write to Ambiguity Log → write ❌ → change Mode: GATE, Status: DRAFT → persist → STOP
         - If RETRY → allow 1 additional cycle of up to 3 coder fix attempts using the reviewer's specific suggestions.
-4. When all items are ✅ → write Completion Report → change Status: RESOLVED → persist
+5. When all items are ✅ → write Completion Report → change Status: RESOLVED → persist
 
 ## Delegation table
 
@@ -53,8 +55,10 @@ If Status is DRAFT or Mode is GATE → do not activate. Tell the user to use /sd
 | BR-XXX         | sdd-tester-agent   |
 | AC-XXX         | sdd-tester-agent   |
 
-## Persistence rule — CRITICAL
-Write to disk before AND after each item.
+## Glass Box & Persistence rule — CRITICAL
+Write to disk before AND after each item:
+1. Update `contracts/[ID].md` status marker (`⏳` / `✅` / `❌`).
+2. Append step details to `.sdd/runs/[ID]-[timestamp].md`.
 Never hold state only in memory.
 If the process is interrupted, the ⏳ marker in the Contract shows exactly where to resume.
 

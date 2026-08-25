@@ -27,8 +27,11 @@ If Status is APPROVED and Mode is LOOP → do not activate. Tell the user to use
 ## Execution steps
 
 1. Read the target Contract from `contracts/[ID].md`
-2. Check the Contract ID (FEAT-XXXX vs. FIX-XXXX) and run the corresponding checklist from `protocol/gate.md` — one section at a time
-3. If a section is incomplete → complete it and STOP. Do not continue to the next section.
+2. Determine the Gate mode:
+   - Read `# Gate-Mode: EXPRESS | STRICT` (if omitted, default to `EXPRESS` for `FIX-XXXX` and `STRICT` for `FEAT-XXXX`).
+3. Execute according to Gate mode:
+   - **If `GATE-EXPRESS`**: Complete all missing sections of the checklist in a single pass, run the consistency check, and present the pre-approval summary immediately (zero spec fatigue).
+   - **If `GATE-STRICT`**: Run the checklist one section at a time. If a section is incomplete → complete it and STOP.
 4. Run consistency check (BR vs AC contradictions, unverifiable criteria, unresolved Ambiguity Log items)
 5. If contradiction found → write to Ambiguity Log and STOP. Present options to the human.
 6. If Contract is complete and consistent → present summary and prompt human to approve
