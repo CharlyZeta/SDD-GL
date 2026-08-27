@@ -10,9 +10,9 @@
 
 > *La especificación no es documentación: es el contrato de completitud.*
 
-SDD-GL es un plugin para Claude Code que implementa un proceso de desarrollo guiado por especificaciones (Spec-Driven Development), diseñado específicamente para **un solo desarrollador**. Resuelve un problema fundamental: al trabajar en solitario con IA, no es práctico revisar cada microiteración, pero tampoco se puede ceder el control total en las decisiones de diseño.
+SDD-GL es un framework multiplataforma y herramienta compatible con el estándar Model Context Protocol (MCP) que implementa un proceso de desarrollo guiado por especificaciones (Spec-Driven Development), diseñado específicamente para **un solo desarrollador**. Proporciona gobernanza selectiva en **Claude Code**, **Google Antigravity CLI & IDE**, **Cursor**, **Windsurf**, **VS Code** y **Zed**. Resuelve un problema fundamental: al trabajar en solitario con IA, no es práctico revisar cada microiteración, pero tampoco se puede ceder el control total en las decisiones de diseño.
 
-La solución consiste en un flujo de trabajo que determina cuándo se requiere intervención humana y cuándo no.
+La solución consiste en un flujo de trabajo adaptativo y estructurado que determina cuándo se requiere intervención humana (Gate) y cuándo la IA puede operar de manera autónoma con total auditabilidad (Glass Box Loop).
 
 ---
 
@@ -498,10 +498,9 @@ Ciclo 3: AC-001 ✅, AC-002 ✅, AC-003 ✅ → Estado final: RESOLVED
 - No garantiza la idoneidad ni calidad de las pruebas si el contrato de origen posee fallos lógicos o está mal redactado.
 - Requiere de un runtime compatible (como Claude Code o Antigravity CLI) para ejecutar los flujos del agente.
 
-### Limitaciones Conocidas (Versión 0.1.0)
-* **Inmutabilidad del Mapa de Completitud**: El Completion Map se genera una única vez al transicionar al modo Loop. Si se realizan modificaciones al contrato con el Loop ya iniciado, el mapa no sincronizará dichos cambios de manera automática.
-* **Ausencia de Árboles de Dependencias**: No existe soporte directo para modelar dependencias jerárquicas entre especificaciones (por ejemplo, definir que `FEAT-0002` requiere la previa implementación de `FEAT-0001`).
-* **Agentes Bundled Genéricos**: Los prompts e instrucciones de los agentes son de propósito general. Para entornos de desarrollo o stacks muy especializados (por ejemplo, jOOQ, Kotlin con Corrutinas o arquitecturas reactivas complejas), se recomienda personalizar los archivos `coder-agent.md` y `tester-agent.md` añadiendo reglas particulares del stack.
+### Limitaciones Conocidas (Versión 0.3.0)
+* **Inmutabilidad del Mapa de Completitud**: El Completion Map se genera una única vez al transicionar al modo Loop. Si se realizan modificaciones al contrato con el Loop ya iniciado, el mapa no sincronizará dichos cambios de manera automática hasta el siguiente ciclo.
+* **Ausencia de Árboles de Dependencias**: El soporte directo para modelar dependencias jerárquicas entre especificaciones (por ejemplo, definir que `FEAT-0002` requiere la previa implementación de `FEAT-0001`) está planificado para la versión 0.4.0.
 
 ---
 
@@ -509,25 +508,48 @@ Ciclo 3: AC-001 ✅, AC-002 ✅, AC-003 ✅ → Estado final: RESOLVED
 
 ```
 sdd-gl/
-├── README.md              ← Documentación principal del plugin.
+├── README.md              ← Documentación principal en inglés.
+├── README.es.md           ← Documentación completa en español.
 ├── CHANGELOG.md           ← Historial de cambios y versiones del proyecto.
-├── plugin.json            ← Archivo de configuración del plugin.
-├── CLAUDE.md              ← Instrucciones principales del orquestador (Claude Code).
+├── plugin.json            ← Manifiesto multiplataforma del plugin.
+├── CLAUDE.md              ← Orquestador para Claude Code.
+├── AGENTS.md              ← Orquestador para Antigravity CLI e IDE.
 ├── LICENSE                ← Licencia del software (MIT).
 ├── protocol/
 │   ├── contract.md        ← Estructura del contrato ejecutable y reglas de inferencia.
-│   ├── gate.md            ← Protocolo de validación y gobernanza con el desarrollador.
-│   └── loop.md            ← Mecanismos del bucle autónomo y resiliencia ante fallos.
-├── .claude/
+│   ├── gate.md            ← Protocolo de Gate Adaptativo (EXPRESS vs. STRICT).
+│   └── loop.md            ← Protocolo de Glass Box Loop, límites de reintento y auditoría.
+├── presets/               ← Presets oficiales de stacks sin configuración (Zero-Config).
+│   ├── java-spring-boot.md ← Java 21+, Spring Boot 3.3+, JUnit 5, Hexagonal/DDD.
+│   ├── python-fastapi.md   ← Python 3.12+, FastAPI, Pytest, Pydantic v2, Async.
+│   └── typescript-node.md  ← TypeScript 5+, Node/Bun, Vitest/Jest, Zod, Prisma.
+├── mcp/
+│   └── sdd-gl-mcp-spec.md ← Especificación de herramientas y configuración del servidor MCP.
+├── assets/
+│   └── sdd-gl-cover.png   ← Portada gráfica y recursos de arquitectura.
+├── test-sandbox/          ← Entorno de pruebas reales para validación end-to-end.
+│   ├── escrow.js
+│   └── escrow.test.js
+├── .claude/               ← Wrappers de agentes y comandos para Claude Code.
 │   ├── agents/
-│   │   ├── requirements-agent.md   ← Genera y detalla las especificaciones en Gate.
-│   │   ├── reviewer-agent.md       ← Valida la consistencia lógica y detecta bloqueos.
-│   │   ├── coder-agent.md          ← Implementa el código fuente durante el Loop.
-│   │   └── tester-agent.md         ← Desarrolla y ejecuta la batería de pruebas.
+│   │   ├── requirements-agent.md
+│   │   ├── reviewer-agent.md
+│   │   ├── coder-agent.md
+│   │   └── tester-agent.md
 │   └── commands/
-│       ├── sdd-feature.md          ← Definición para el comando /sdd-feature.
-│       ├── sdd-fix.md              ← Definición para el comando /sdd-fix.
-│       └── sdd-status.md           ← Definición para el comando /sdd-status.
+│       ├── sdd-feature.md
+│       ├── sdd-fix.md
+│       └── sdd-status.md
+├── .agents/skills/        ← Habilidades nativas para Antigravity.
+│   ├── sdd-gate/
+│   ├── sdd-loop/
+│   ├── sdd-feature/
+│   ├── sdd-fix/
+│   ├── sdd-status/
+│   ├── sdd-requirements-agent/
+│   ├── sdd-reviewer-agent/
+│   ├── sdd-coder-agent/
+│   └── sdd-tester-agent/
 └── contracts/             ← Directorio de destino para las especificaciones del proyecto.
     └── .gitkeep
 ```
@@ -536,16 +558,30 @@ sdd-gl/
 
 ## Plan de Desarrollo (Roadmap)
 
-### Versión 0.2.0 (Próxima)
-- [ ] Soporte para árboles de decisión y contratos dependientes (`depends_on: FEAT-XXXX`).
-- [ ] Comando `sdd-reopen` para reabrir y modificar especificaciones previamente resueltas (`RESOLVED`).
-- [ ] Sincronización automática del Completion Map ante cambios posteriores en el contrato aprobado.
-- [ ] Preset tecnológico preconfigurado para Java Spring Boot + PostgreSQL.
+### Versión 0.1.0 — Núcleo Inicial (Publicada)
+- [x] Máquina de estados fundamental Gate/Loop y modelo de gobernanza selectiva.
+- [x] Inferencia de criterios de completitud y escalado mediante Ambiguity Log.
+- [x] Persistencia de estado ítem por ítem y recuperación ante interrupciones.
+- [x] Cuatro agentes integrados y comandos base (`/sdd-feature`, `/sdd-fix`, `/sdd-status`).
 
-### Versión 0.3.0
-- [ ] Comando `sdd-review` para generar reportes analíticos de cobertura de todos los contratos.
-- [ ] Preset tecnológico para Python (FastAPI).
-- [ ] Preset tecnológico para Node.js + TypeScript.
+### Versión 0.2.0 — Multiplataforma y Resiliencia Arquitectónica (Publicada)
+- [x] Soporte nativo para Google Antigravity CLI e IDE (`AGENTS.md` + 9 habilidades especializadas).
+- [x] Checklists diferenciados en Gate para Features (`FEAT`) vs. Bugfixes (`FIX`).
+- [x] Límite de reintentos del revisor (máximo 1 ciclo guiado para eliminar bucles infinitos).
+- [x] Manejo de escalado directo para estados `BLOCKED` (Coder) y `NOT_WRITABLE` (Tester).
+
+### Versión 0.3.0 — Gobernanza Adaptativa, Glass Box y MCP (Versión Actual)
+- [x] **Gobernanza Adaptativa en Gate**: Modo `GATE-EXPRESS` (aprobación en 1 solo paso para fixes y tareas atómicas, fatiga cero) junto a `GATE-STRICT` (revisión progresiva sección por sección para lógica compleja).
+- [x] **Glass Box Loop**: Trazabilidad y auditoría de ejecución transparente en `.sdd/runs/[ID]-[timestamp].md` con archivos inspeccionados, diffs, salidas del runner y justificaciones técnicas.
+- [x] **Presets Oficiales de Stacks**: Presets listos para producción para Java Spring Boot 3.x, Python FastAPI y TypeScript Node.js/Bun en `presets/`.
+- [x] **Estándar Model Context Protocol (MCP)**: Especificación formal JSON-RPC en `mcp/sdd-gl-mcp-spec.md` para integración con Cursor, Windsurf, Claude Code/Desktop, Antigravity y Zed.
+- [x] **Validación de QA End-to-End**: Suite completa de verificación y sandbox funcional (`test-sandbox/escrow.test.js`).
+
+### Versión 0.4.0 (Próxima)
+- [ ] Paquete independiente en NPM `@sdd-gl/mcp-server` para ejecución instantánea vía `npx`.
+- [ ] Acción de CI/CD para GitHub Actions (`sdd-verify-action`) para validación de contratos en Pull Requests.
+- [ ] Comando CLI `sdd-review` para generar reportes analíticos de cobertura entre contratos.
+- [ ] Soporte para árboles de decisión y contratos dependientes (`depends_on: FEAT-XXXX`).
 
 ### Backlog de Ideas
 - [ ] Integración nativa con sistemas de tickets e incidencias (GitHub Issues, Linear, Jira).

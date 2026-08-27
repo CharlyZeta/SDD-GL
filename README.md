@@ -12,9 +12,9 @@
 
 > *The specification is not documentation: it is the contract of completeness.*
 
-SDD-GL is a plugin for Claude Code that implements a Spec-Driven Development (SDD) process designed specifically for **solo developers**. It addresses a fundamental challenge: when working alone with AI, reviewing every single micro-iteration is impractical, yet yielding complete control over design decisions is risky.
+SDD-GL is a multi-platform framework and Model Context Protocol (MCP) tool that implements a Spec-Driven Development (SDD) process designed specifically for **solo developers**. It provides selective governance across **Claude Code**, **Google Antigravity CLI & IDE**, **Cursor**, **Windsurf**, **VS Code**, and **Zed**. It addresses a fundamental challenge: when working alone with AI, reviewing every single micro-iteration is impractical, yet yielding complete control over design decisions is risky.
 
-The solution is a structured workflow that clearly determines when human intervention is required and when the AI can operate autonomously.
+The solution is a structured, adaptive workflow that clearly determines when human intervention is required (Gate) and when the AI can operate autonomously with full auditability (Glass Box Loop).
 
 ---
 
@@ -503,10 +503,9 @@ Cycle 3: AC-001 ✅, AC-002 ✅, AC-003 ✅ → Final Status: RESOLVED
 - It does not guarantee test quality if the underlying contract has logical flaws or is poorly written.
 - It requires a compatible runtime (such as Claude Code or Antigravity CLI) to run the agent workflows.
 
-### Known Limitations (Version 0.1.0)
-* **Immutable Completion Map**: The Completion Map is generated only once when transitioning to Loop mode. If you modify the contract during the Loop phase, the map will not automatically synchronize those changes.
-* **No Dependency Trees**: There is no native support to model hierarchical dependencies between specifications (e.g., declaring that `FEAT-0002` requires `FEAT-0001` to be implemented first).
-* **Generic Bundled Agents**: The agent prompts and instructions are generic. For highly specialized developer environments or stacks (e.g., jOOQ, Kotlin Coroutines, or reactive patterns), we recommend customizing the `coder-agent.md` and `tester-agent.md` prompts directly.
+### Known Limitations (Version 0.3.0)
+* **Immutable Completion Map**: The Completion Map is generated once upon transitioning to Loop mode. If the contract is manually edited while the Loop is active, the map will not automatically resynchronize until the next cycle.
+* **No Dependency Trees**: Native support for declaring prerequisites between contracts (e.g., `depends_on: FEAT-0001`) is scheduled for v0.4.0.
 
 ---
 
@@ -514,25 +513,48 @@ Cycle 3: AC-001 ✅, AC-002 ✅, AC-003 ✅ → Final Status: RESOLVED
 
 ```
 sdd-gl/
-├── README.md              ← Main documentation.
+├── README.md              ← Main documentation (English).
+├── README.es.md           ← Complete documentation in Spanish.
 ├── CHANGELOG.md           ← Project version history and changelog.
-├── plugin.json            ← Plugin configuration file.
-├── CLAUDE.md              ← Orchestrator instructions (Claude Code).
+├── plugin.json            ← Plugin and multi-platform manifest.
+├── CLAUDE.md              ← Orchestrator for Claude Code.
+├── AGENTS.md              ← Orchestrator for Antigravity CLI and IDE.
 ├── LICENSE                ← Project software license (MIT).
 ├── protocol/
 │   ├── contract.md        ← Executable contract schema and inference rules.
-│   ├── gate.md            ← Validation protocol and developer-agent governance.
-│   └── loop.md            ← Mechanisms of the autonomous loop and crash recovery rules.
-├── .claude/
+│   ├── gate.md            ← Adaptive Gate protocol (EXPRESS vs. STRICT).
+│   └── loop.md            ← Glass Box Loop protocol, retry limits, and audit specs.
+├── presets/               ← Official zero-config stack presets.
+│   ├── java-spring-boot.md ← Java 21+, Spring Boot 3.3+, JUnit 5, Hexagonal/DDD.
+│   ├── python-fastapi.md   ← Python 3.12+, FastAPI, Pytest, Pydantic v2, Async.
+│   └── typescript-node.md  ← TypeScript 5+, Node/Bun, Vitest/Jest, Zod, Prisma.
+├── mcp/
+│   └── sdd-gl-mcp-spec.md ← Model Context Protocol (MCP) tool definitions & config.
+├── assets/
+│   └── sdd-gl-cover.png   ← Architecture banner and diagram assets.
+├── test-sandbox/          ← Real-world testbed for end-to-end framework validation.
+│   ├── escrow.js
+│   └── escrow.test.js
+├── .claude/               ← Claude Code command and agent wrappers.
 │   ├── agents/
-│   │   ├── requirements-agent.md   ← Generates and details specifications in Gate.
-│   │   ├── reviewer-agent.md       ← Validates logical consistency and flags blocks.
-│   │   ├── coder-agent.md          ← Implements source code during the Loop.
-│   │   └── tester-agent.md         ← Develops and executes the test suite.
+│   │   ├── requirements-agent.md
+│   │   ├── reviewer-agent.md
+│   │   ├── coder-agent.md
+│   │   └── tester-agent.md
 │   └── commands/
-│       ├── sdd-feature.md          ← Configuration for the /sdd-feature command.
-│       ├── sdd-fix.md              ← Configuration for the /sdd-fix command.
-│       └── sdd-status.md           ← Configuration for the /sdd-status command.
+│       ├── sdd-feature.md
+│       ├── sdd-fix.md
+│       └── sdd-status.md
+├── .agents/skills/        ← Antigravity skills definitions.
+│   ├── sdd-gate/
+│   ├── sdd-loop/
+│   ├── sdd-feature/
+│   ├── sdd-fix/
+│   ├── sdd-status/
+│   ├── sdd-requirements-agent/
+│   ├── sdd-reviewer-agent/
+│   ├── sdd-coder-agent/
+│   └── sdd-tester-agent/
 └── contracts/             ← Output directory for project specification contracts.
     └── .gitkeep
 ```
@@ -541,16 +563,30 @@ sdd-gl/
 
 ## Roadmap
 
-### Version 0.2.0 (Upcoming)
-- [ ] Support for decision trees and dependent contracts (`depends_on: FEAT-XXXX`).
-- [ ] `sdd-reopen` command to reopen and modify previously resolved specifications (`RESOLVED`).
-- [ ] Auto-synchronization of the Completion Map when the approved contract is modified.
-- [ ] Preconfigured tech stack preset for Java Spring Boot + PostgreSQL.
+### Version 0.1.0 — Initial Core (Released)
+- [x] Gate/Loop core state machine and selective governance model.
+- [x] Inferred completion criteria and Ambiguity Log escalation.
+- [x] Item-by-item state persistence and crash recovery.
+- [x] Four bundled agents and base CLI commands (`/sdd-feature`, `/sdd-fix`, `/sdd-status`).
 
-### Version 0.3.0
-- [ ] `sdd-review` command to generate analytics and coverage reports across all contracts.
-- [ ] Tech stack preset for Python (FastAPI).
-- [ ] Tech stack preset for Node.js + TypeScript.
+### Version 0.2.0 — Multi-Platform & Architectural Resilience (Released)
+- [x] Native Antigravity CLI and Antigravity IDE support (`AGENTS.md` + 9 specialized skills).
+- [x] Split Gate checklists for Features (`FEAT`) vs. Bugfixes (`FIX`).
+- [x] Reviewer retry limit (max 1 reviewer-guided cycle to eliminate infinite loops).
+- [x] Direct escalation handling for `BLOCKED` (Coder) and `NOT_WRITABLE` (Tester) states.
+
+### Version 0.3.0 — Adaptive Governance, Glass Box & MCP (Current Release)
+- [x] **Adaptive Gate Governance**: Zero-fatigue `GATE-EXPRESS` (1-step approvals for fixes/small tasks) alongside `GATE-STRICT` (progressive multi-section reviews for complex domain features).
+- [x] **Glass Box Loop**: Transparent, auditable execution traces generated in `.sdd/runs/[ID]-[timestamp].md` with context files, diffs, runner outputs, and decision rationales.
+- [x] **Official Stack Presets**: Zero-config presets for Java Spring Boot 3.x, Python FastAPI, and TypeScript Node.js/Bun in `presets/`.
+- [x] **Model Context Protocol (MCP) Standard**: Formal JSON-RPC tool specification in `mcp/sdd-gl-mcp-spec.md` for Cursor, Windsurf, Claude Code/Desktop, Antigravity, and Zed.
+- [x] **End-to-End QA Validation**: Complete verification suite and testbed sandbox (`test-sandbox/escrow.test.js`).
+
+### Version 0.4.0 (Upcoming)
+- [ ] Standalone NPM package `@sdd-gl/mcp-server` for instant `npx` execution across any MCP client.
+- [ ] GitHub Actions CI workflow (`sdd-verify-action`) for Pull Request contract completeness checks.
+- [ ] `sdd-review` CLI command to generate cross-contract analytics and coverage heatmaps.
+- [ ] Support for decision trees and dependent contracts (`depends_on: FEAT-XXXX`).
 
 ### Ideas Backlog
 - [ ] Native integration with issue tracking systems (GitHub Issues, Linear, Jira).
