@@ -2,7 +2,7 @@
 
 ![SDD-GL Portada](assets/sdd-gl-cover.png)
 
-[![Version](https://img.shields.io/badge/version-0.3.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.4.0-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![MCP Protocol](https://img.shields.io/badge/MCP-Protocol%20Ready-purple)](mcp/sdd-gl-mcp-spec.md)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-orange)](https://docs.claude.ai/code)
@@ -121,27 +121,28 @@ Cuando el desarrollador aprueba el contrato, el Loop procesa la especificación 
 
 ```markdown
 COMPLETION MAP: FEAT-0001
-# generado: 2026-08-03 10:30
-# Flujo Principal | integration-test:FEAT-0001-main  | coder+tester | ❌
-# AF-01           | unit-test:FEAT-0001-af01          | tester       | ❌
-# AF-02           | unit-test:FEAT-0001-af02          | tester       | ❌
-# BR-001          | unit-test:FEAT-0001-br001         | tester       | ❌
-# BR-002          | unit-test:FEAT-0001-br002         | tester       | ❌
-# AC-001          | assertion:FEAT-0001-ac001         | tester       | ❌
-# AC-002          | assertion:FEAT-0001-ac002         | tester       | ❌
+# generado: 2026-10-02 18:30
+# [item-id]|[layer]|[test-id]|[agent]|[status]
+# Flujo Principal | functional | functional-tests:FEAT-0001-main | tester   | ❌
+# Flujo Principal | static     | static-analysis:FEAT-0001-main  | verifier | ❌
+# Flujo Principal | security   | security-scan:FEAT-0001-main    | verifier | ❌
+# Flujo Principal | arch       | arch-guard:FEAT-0001-main       | verifier | ❌
+# AF-01           | functional | unit-test:FEAT-0001-af01        | tester   | ❌
+# BR-001          | functional | unit-test:FEAT-0001-br001        | tester   | ❌
+# AC-001          | functional | assertion:FEAT-0001-ac001        | tester   | ❌
 ```
 
-#### Tabla de Inferencia de Criterios
+#### Tabla de Inferencia de Capas y Criterios
 
-| Elemento en el Contract | Criterio inferido |
-| :--- | :--- |
-| Flujo Principal (N pasos) | Mínimo 1 prueba de integración |
-| Flujo Alternativo (AF-XX) | 1 prueba unitaria por cada AF |
-| Regla de Negocio (BR-XXX) | 1 prueba unitaria de validación por cada BR |
-| Criterio de Aceptación (AC-XXX) | Mínimo 1 aserción verificable por cada AC |
+| Capa de Verificación | Propósito | Agente Encargado |
+| :--- | :--- | :--- |
+| **`functional`** | Pruebas unitarias, de integración y aserciones para flujos y reglas | `tester-agent` |
+| **`static`** | Tipado estricto, análisis estático y reglas de linter | `verifier-agent` |
+| **`security`** | Escaneo de vulnerabilidades, fuga de secretos y SAST | `verifier-agent` |
+| **`arch`** | Cumplimiento de límites de arquitectura y `CONSTITUTION.md` | `verifier-agent` |
 
 > [!TIP]
-> El Loop no finaliza su ejecución hasta que todos los elementos marcados en el Completion Map se resuelvan satisfactoriamente (`✅`). La cobertura de pruebas no está determinada por un porcentaje genérico, sino directamente por los requisitos especificados en el contrato.
+> El Loop no finaliza su ejecución hasta que todos los elementos distribuidos en las 4 capas de verificación del Completion Map se resuelvan satisfactoriamente (`✅`). Si ocurre un hallazgo acotado, el agente `solve-agent` intenta automáticamente una reparación rápida en $\le 3$ intentos.
 
 ---
 
@@ -256,7 +257,47 @@ El sistema devolverá una vista detallada:
    └── FEAT-0001: Registrar pago entre cuentas [12/12 ✅]
    └── FIX-0001: Fix rollback de saldo en pago fallido [4/4 ✅]
 
-Total: 4 contracts | 1 en Gate | 1 en Loop | 2 resueltos
+```
+
+### Consultar Métricas de Calidad
+Para inspeccionar el First-Pass Quality Rate (FPQR), el promedio de reintentos y las tasas de éxito por capa, ejecuta:
+```bash
+/sdd-metrics
+```
+Salida:
+```
+📊 Resumen de Métricas de Calidad SDD-GL
+=============================================
+Total de Contratos Evaluados: 4 (FEAT: 3, FIX: 1)
+
+• First-Pass Quality Rate (FEAT): 80.0%
+• First-Pass Quality Rate (FIX):  100.0%
+• First-Pass Rate Global:         85.0%
+
+• Promedio de Reintentos:         0.35
+• Tasa de Escalado a Gate:        15.0%
+
+Tasa de Éxito por Capa de Verificación (1er intento):
+  - 🧪 Pruebas Funcionales:  92.5%
+  - 🔍 Análisis Estático:    95.0%
+  - 🛡️ Escaneo de Seguridad: 100.0%
+  - 🏛️ Guardrail Arq.:       100.0%
+=============================================
+```
+
+### Auditar Trazabilidad de Requisitos
+Para auditar la cobertura de especificaciones y detectar requisitos huérfanos o código de dominio no especificado, ejecuta:
+```bash
+/sdd-audit
+```
+Salida:
+```
+🔍 Reporte de Auditoría de Trazabilidad SDD-GL
+=============================================
+Total de Contratos Inspeccionados: 4
+Puntaje de Cobertura de Especificación: 95.0%
+Estado: ✅ Todas las especificaciones validadas en el código activo.
+=============================================
 ```
 
 ---
@@ -383,25 +424,36 @@ Las 9 pruebas (unitarias, de integración y aserciones) pasaron con éxito, tran
 
 ---
 
-## Los Cuatro Agentes
+## Los Seis Agentes Especializados
 
-SDD-GL incluye cuatro agentes integrados. No requieren configuración manual; el orquestador se encarga de invocarlos con el contexto adecuado en cada etapa del ciclo.
+SDD-GL incluye seis agentes especializados que colaboran entre sí. No requieren configuración manual; el orquestador se encarga de invocarlos con el contexto adecuado en cada etapa del ciclo.
 
 ### `requirements-agent`
-Opera exclusivamente durante la fase de **Gate**. Completa las secciones del contrato **una por iteración** para garantizar que no se omitan detalles; nunca avanza más de una sección sin esperar una revisión y validación intermedia. Formatea las reglas de negocio como invariantes lógicas y estructura los criterios de aceptación bajo el estándar GIVEN/WHEN/THEN.
-* **Propósito**: Asegurar un diseño progresivo y reflexivo en lugar de una generación apresurada. Permite corregir la dirección del diseño de forma temprana.
+Opera exclusivamente durante la fase de **Gate**. Completa las secciones del contrato (de forma iterativa en modo `STRICT` o en un solo paso en modo `EXPRESS`) para garantizar que no se omitan detalles. Formatea las reglas de negocio como invariantes lógicas y estructura los criterios de aceptación bajo el estándar GIVEN/WHEN/THEN.
 
 ### `reviewer-agent`
 Opera de manera transversal tanto en **Gate** como en **Loop**.
 * En **Gate**, valida la consistencia lógica interna antes de la aprobación humana: detecta contradicciones entre reglas de negocio y criterios de aceptación, referencias a datos inexistentes y criterios no comprobables.
-* En **Loop**, analiza los fallos tras tres intentos de compilación o testeo para discernir si se trata de un error de implementación (lo que provoca un reintento) o de una ambigüedad conceptual en el contrato (lo que detiene el flujo y escala a Gate).
-* **Propósito**: Prevenir que especificaciones incompatibles o erróneas inicien la fase de codificación, ahorrando ciclos fallidos de desarrollo.
+* En **Loop**, analiza los fallos tras tres intentos para discernir si se trata de un error de implementación (lo que provoca un reintento guiado) o de una ambigüedad conceptual en el contrato (lo que detiene el flujo y escala a Gate).
 
 ### `coder-agent`
-Opera únicamente durante la fase de **Loop**. Es el encargado de escribir el código de la aplicación y de subsanar los fallos de implementación reportados por las pruebas. Analiza el archivo `stack.md` para respetar fielmente las tecnologías y convenciones del proyecto. Si requiere tomar una decisión de diseño que no esté documentada en el contrato, detiene el proceso y escala la decisión al desarrollador.
+Opera únicamente durante la fase de **Loop**. Es el encargado de escribir el código de la aplicación y de subsanar los fallos estructurales reportados por las pruebas. Respeta fielmente las tecnologías y convenciones del proyecto (`CONSTITUTION.md`, `stack.md` o presets). Si requiere tomar una decisión de diseño no documentada, escala a Gate.
 
 ### `tester-agent`
-Opera únicamente durante la fase de **Loop**. Diseña y ejecuta las pruebas necesarias para verificar cada regla de negocio (BR), flujo alternativo (AF) y criterio de aceptación (AC). C## Casos de Uso Críticos y Robustez
+Opera durante la fase de **Loop**. Diseña y ejecuta la suite de pruebas funcionales para verificar cada regla de negocio (BR), flujo alternativo (AF) y criterio de aceptación (AC).
+
+### `verifier-agent`
+Opera durante la fase de **Loop**. Ejecuta las capas no funcionales de verificación:
+* **Análisis Estático y Tipos**: Valida sintaxis, tipado estricto y linters.
+* **Escaneo de Seguridad**: Analiza vulnerabilidades, dependencias inseguras y fuga de secretos.
+* **Guardrail Arquitectónico**: Garantiza el respeto a los límites de módulos y principios de `CONSTITUTION.md`.
+
+### `solve-agent`
+Opera como un agente de autorreparación rápida en el **Loop**. Cuando `verifier-agent` o `tester-agent` detectan fallos acotados (lint, imports, tipado simple o ajustes menores en assertions), `solve-agent` aplica fixes localizados en $\le 3$ intentos, evitando costosas re-invocaciones al Coder. Tiene estrictamente prohibido alterar arquitectura o reglas de negocio.
+
+---
+
+## Casos de Uso Críticos y Robustez
 
 El protocolo de SDD-GL está optimizado para lidiar con escenarios complejos del día a día, minimizando la pérdida de tiempo y el retrabajo.
 
@@ -514,42 +566,54 @@ sdd-gl/
 ├── plugin.json            ← Manifiesto multiplataforma del plugin.
 ├── CLAUDE.md              ← Orquestador para Claude Code.
 ├── AGENTS.md              ← Orquestador para Antigravity CLI e IDE.
+├── CONSTITUTION.md        ← Leyes arquitectónicas y guardrails de seguridad globales.
 ├── LICENSE                ← Licencia del software (MIT).
 ├── protocol/
-│   ├── contract.md        ← Estructura del contrato ejecutable y reglas de inferencia.
+│   ├── contract.md        ← Estructura del contrato ejecutable y Completion Map multicapa.
 │   ├── gate.md            ← Protocolo de Gate Adaptativo (EXPRESS vs. STRICT).
-│   └── loop.md            ← Protocolo de Glass Box Loop, límites de reintento y auditoría.
+│   └── loop.md            ← Protocolo de Loop multicapa, límites de reintento, solve-agent y auditoría.
 ├── presets/               ← Presets oficiales de stacks sin configuración (Zero-Config).
 │   ├── java-spring-boot.md ← Java 21+, Spring Boot 3.3+, JUnit 5, Hexagonal/DDD.
 │   ├── python-fastapi.md   ← Python 3.12+, FastAPI, Pytest, Pydantic v2, Async.
 │   └── typescript-node.md  ← TypeScript 5+, Node/Bun, Vitest/Jest, Zod, Prisma.
-├── mcp/
-│   └── sdd-gl-mcp-spec.md ← Especificación de herramientas y configuración del servidor MCP.
+├── mcp/                   ← Servidor Model Context Protocol (MCP).
+│   ├── package.json       ← Manifiesto npm del servidor MCP (@sdd-gl/mcp-server).
+│   ├── server.js          ← Servidor ejecutable stdio JSON-RPC con todas las herramientas.
+│   └── sdd-gl-mcp-spec.md ← Especificación de herramientas y configuración de clientes.
 ├── assets/
 │   └── sdd-gl-cover.png   ← Portada gráfica y recursos de arquitectura.
-├── test-sandbox/          ← Entorno de pruebas reales para validación end-to-end.
+├── test-sandbox/          ← Entorno de pruebas reales para validación multicapa.
 │   ├── escrow.js
-│   └── escrow.test.js
+│   ├── escrow.test.js
+│   └── multilayer-verifier.test.js
 ├── .claude/               ← Wrappers de agentes y comandos para Claude Code.
 │   ├── agents/
 │   │   ├── requirements-agent.md
 │   │   ├── reviewer-agent.md
 │   │   ├── coder-agent.md
-│   │   └── tester-agent.md
+│   │   ├── tester-agent.md
+│   │   ├── verifier-agent.md
+│   │   └── solve-agent.md
 │   └── commands/
 │       ├── sdd-feature.md
 │       ├── sdd-fix.md
-│       └── sdd-status.md
+│       ├── sdd-status.md
+│       ├── sdd-metrics.md
+│       └── sdd-audit.md
 ├── .agents/skills/        ← Habilidades nativas para Antigravity.
 │   ├── sdd-gate/
 │   ├── sdd-loop/
 │   ├── sdd-feature/
 │   ├── sdd-fix/
 │   ├── sdd-status/
+│   ├── sdd-metrics/
+│   ├── sdd-audit/
 │   ├── sdd-requirements-agent/
 │   ├── sdd-reviewer-agent/
 │   ├── sdd-coder-agent/
-│   └── sdd-tester-agent/
+│   ├── sdd-tester-agent/
+│   ├── sdd-verifier-agent/
+│   └── sdd-solve-agent/
 └── contracts/             ← Directorio de destino para las especificaciones del proyecto.
     └── .gitkeep
 ```
@@ -570,15 +634,22 @@ sdd-gl/
 - [x] Límite de reintentos del revisor (máximo 1 ciclo guiado para eliminar bucles infinitos).
 - [x] Manejo de escalado directo para estados `BLOCKED` (Coder) y `NOT_WRITABLE` (Tester).
 
-### Versión 0.3.0 — Gobernanza Adaptativa, Glass Box y MCP (Versión Actual)
-- [x] **Gobernanza Adaptativa en Gate**: Modo `GATE-EXPRESS` (aprobación en 1 solo paso para fixes y tareas atómicas, fatiga cero) junto a `GATE-STRICT` (revisión progresiva sección por sección para lógica compleja).
-- [x] **Glass Box Loop**: Trazabilidad y auditoría de ejecución transparente en `.sdd/runs/[ID]-[timestamp].md` con archivos inspeccionados, diffs, salidas del runner y justificaciones técnicas.
-- [x] **Presets Oficiales de Stacks**: Presets listos para producción para Java Spring Boot 3.x, Python FastAPI y TypeScript Node.js/Bun en `presets/`.
-- [x] **Estándar Model Context Protocol (MCP)**: Especificación formal JSON-RPC en `mcp/sdd-gl-mcp-spec.md` para integración con Cursor, Windsurf, Claude Code/Desktop, Antigravity y Zed.
-- [x] **Validación de QA End-to-End**: Suite completa de verificación y sandbox funcional (`test-sandbox/escrow.test.js`).
+### Versión 0.3.0 — Gobernanza Adaptativa, Glass Box y Especificación MCP (Publicada)
+- [x] Gobernanza Adaptativa en Gate (`GATE-EXPRESS` vs. `GATE-STRICT`).
+- [x] Glass Box Loop con trazas de auditoría en `.sdd/runs/[ID]-[timestamp].md`.
+- [x] Presets Oficiales de Stacks (Spring Boot, FastAPI, TypeScript).
+- [x] Especificación formal del estándar Model Context Protocol (MCP).
 
-### Versión 0.4.0 (Próxima)
-- [ ] Paquete independiente en NPM `@sdd-gl/mcp-server` para ejecución instantánea vía `npx`.
+### Versión 0.4.0 — Verificación en Capas (AC/DC), Reparación Automática y Servidor MCP Ejecutable (Versión Actual)
+- [x] **Protocolo de Verificación en Capas (Capa AC/DC)**: 4 capas de verificación (`functional`, `static`, `security`, `arch`) en formato tabular de una sola línea.
+- [x] **Agente de Reparación Rápida (`solve-agent`)**: Autorreparación de hallazgos locales de sintaxis, tipado y lint en $\le 3$ intentos.
+- [x] **Agente Verificador (`verifier-agent`)**: Ejecución autónoma de verificaciones estáticas, de seguridad y arquitectura.
+- [x] **Métricas de Calidad (`/sdd-metrics`)**: Cálculo en tiempo real de First-Pass Quality Rate (FPQR) y reintentos vía `.sdd/metrics.json`.
+- [x] **Auditoría de Trazabilidad (`/sdd-audit`)**: Detección automática de requisitos huérfanos y código de dominio no especificado.
+- [x] **Servidor MCP Ejecutable (`@sdd-gl/mcp-server`)**: Servidor JSON-RPC estándar en `mcp/server.js` con soporte para todas las herramientas.
+- [x] **Constitución del Proyecto (`CONSTITUTION.md`)**: Guardrails de arquitectura y seguridad no negociables.
+
+### Versión 0.5.0 (Próxima)
 - [ ] Acción de CI/CD para GitHub Actions (`sdd-verify-action`) para validación de contratos en Pull Requests.
 - [ ] Comando CLI `sdd-review` para generar reportes analíticos de cobertura entre contratos.
 - [ ] Soporte para árboles de decisión y contratos dependientes (`depends_on: FEAT-XXXX`).
