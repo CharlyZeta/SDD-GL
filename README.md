@@ -147,52 +147,81 @@ COMPLETION MAP: FEAT-0001
 
 ---
 
-## Quickstart
+## Quickstart & Installation
 
-Follow this step-by-step guide to configure and start using SDD-GL in your local environment.
+Follow this step-by-step guide to configure and start using SDD-GL in your preferred development environment.
 
 ### 1. Prerequisites
-- **Claude Code** (version `>= 1.0.0`) or **Antigravity CLI**.
+- **Node.js** (version `>= 18.0.0`) for MCP Server execution.
+- Any supported AI client: **Cursor**, **Windsurf**, **Claude Desktop / Claude Code**, **Google Antigravity CLI & IDE**, **VS Code** (with Cline/Roo Code), or **Zed**.
 - A development project initialized with a **Git** repository.
-- Basic test configuration in the project (the autonomous loop requires running automated tests).
 
-### 2. Installation of SDD-GL
-Choose one of the following methods to integrate the plugin into your project:
+---
 
-#### Option A: Direct Clone (Clean Installation)
-Run the following commands from the root of your project to pull in the necessary files:
+### 2. Choose Your Installation Method
+
+#### 🌐 Method 1: Universal MCP Server (Cursor, Windsurf, Claude Desktop, VS Code)
+No repository cloning needed. Add the MCP server directly from GitHub to your IDE configuration (`~/.cursor/mcp.json`, `claude_desktop_config.json`, or Cline MCP settings):
+
+```json
+{
+  "mcpServers": {
+    "sdd-gl": {
+      "command": "npx",
+      "args": ["-y", "github:CharlyZeta/SDD-GL", "mcp/server.js"]
+    }
+  }
+}
+```
+*Instantly equips your IDE with 7 native tools: `sdd_create_contract`, `sdd_validate_gate`, `sdd_step_loop`, `sdd_log_ambiguity`, `sdd_get_status`, `sdd_get_metrics`, and `sdd_audit_traceability`.*
+
+#### ⚡ Method 2: Claude Code Plugin
+In your terminal, install SDD-GL as a native Claude Code plugin directly from GitHub:
 ```bash
-git clone https://github.com/CharlyZeta/sdd-gl .sdd-gl
-cp .sdd-gl/CLAUDE.md .
-cp -r .sdd-gl/protocol .
-cp -r .sdd-gl/.claude .
-mkdir -p contracts
-rm -rf .sdd-gl
+claude plugin add github:CharlyZeta/SDD-GL
+```
+Or clone it into your local Claude plugin directory:
+```bash
+git clone https://github.com/CharlyZeta/SDD-GL.git ~/.claude/plugins/sdd-gl
 ```
 
-#### Option B: Git Submodule (Recommended for Updates)
-To link the repository and easily pull updates:
+#### 🤖 Method 3: Google Antigravity CLI & IDE
+To install native skills, protocols, and orchestrators into your project:
 ```bash
-git submodule add https://github.com/CharlyZeta/sdd-gl .sdd-gl
+git clone https://github.com/CharlyZeta/SDD-GL.git .sdd-tmp
+cp -r .sdd-tmp/.agents/skills .agents/skills
+cp -r .sdd-tmp/protocol protocol
+cp -r .sdd-tmp/presets presets
+cp .sdd-tmp/AGENTS.md .
+cp .sdd-tmp/CONSTITUTION.md .
+mkdir -p contracts
+rm -rf .sdd-tmp
+```
+
+#### 📦 Method 4: Git Submodule
+Link SDD-GL to your repository to receive upstream updates seamlessly:
+```bash
+git submodule add https://github.com/CharlyZeta/SDD-GL.git .sdd-gl
 cp .sdd-gl/CLAUDE.md .
+cp .sdd-gl/AGENTS.md .
 cp -r .sdd-gl/protocol .
-cp -r .sdd-gl/.claude .
+cp -r .sdd-gl/presets .
 mkdir -p contracts
 ```
 
-### 3. Recommended Stack Configuration
-Create a `stack.md` file in the root directory to help agents understand your tech stack and architectural patterns:
+---
+
+### 3. Recommended Stack Configuration & Presets
+Choose a production preset from `presets/` or create a `stack.md` file in your root directory:
 ```markdown
 # Development Stack
-- Language: Java 21
-- Framework: Spring Boot 3.x
-- Database: PostgreSQL
-- Testing: JUnit 5 + Mockito
-- Build Tool: Maven
+- Language: Java 21 / Python 3.12 / TypeScript 5
+- Framework: Spring Boot 3.3 / FastAPI / Node.js
+- Testing: JUnit 5 / Pytest / Vitest
 - Architectural Style: Hexagonal Architecture + DDD
 ```
 > [!NOTE]
-> Without `stack.md`, agents will still function, but they might generate generic code and tests that do not match your project's conventions.
+> Presets located in `presets/` provide zero-config guidelines for Java Spring Boot, Python FastAPI, and TypeScript Node.js.
 
 ---
 

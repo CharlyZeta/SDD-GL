@@ -146,52 +146,81 @@ COMPLETION MAP: FEAT-0001
 
 ---
 
-## Inicio Rápido (Quickstart)
+## Inicio Rápido e Instalación
 
-Sigue esta guía paso a paso para configurar y comenzar a utilizar SDD-GL en tu entorno local.
+Sigue esta guía paso a paso para configurar y comenzar a utilizar SDD-GL en tu entorno de desarrollo preferido.
 
 ### 1. Requisitos Previos
-- **Claude Code** (versión `>= 1.0.0`) o el CLI de **Antigravity**.
+- **Node.js** (versión `>= 18.0.0`) para la ejecución del Servidor MCP.
+- Cualquier cliente de IA compatible: **Cursor**, **Windsurf**, **Claude Desktop / Claude Code**, **Google Antigravity CLI & IDE**, **VS Code** (con Cline/Roo Code) o **Zed**.
 - Un proyecto de desarrollo controlado bajo un repositorio de **Git**.
-- Configuración básica de testing en el proyecto (el bucle autónomo requiere ejecutar pruebas automatizadas).
 
-### 2. Instalación de SDD-GL
-Elige uno de los siguientes métodos para incorporar el plugin en tu proyecto:
+---
 
-#### Opción A: Clonación directa en el proyecto (Instalación limpia)
-Ejecuta los siguientes comandos desde la raíz de tu proyecto para incorporar los archivos necesarios:
+### 2. Elige tu Método de Instalación
+
+#### 🌐 Método 1: Servidor MCP Universal (Cursor, Windsurf, Claude Desktop, VS Code)
+Sin necesidad de clonar repositorios manualmente. Añade el servidor MCP directamente desde GitHub a la configuración de tu IDE (`~/.cursor/mcp.json`, `claude_desktop_config.json` o configuración MCP de Cline):
+
+```json
+{
+  "mcpServers": {
+    "sdd-gl": {
+      "command": "npx",
+      "args": ["-y", "github:CharlyZeta/SDD-GL", "mcp/server.js"]
+    }
+  }
+}
+```
+*Equipa instantáneamente al chat de tu IDE con 7 herramientas nativas: `sdd_create_contract`, `sdd_validate_gate`, `sdd_step_loop`, `sdd_log_ambiguity`, `sdd_get_status`, `sdd_get_metrics` y `sdd_audit_traceability`.*
+
+#### ⚡ Método 2: Plugin para Claude Code
+En tu terminal, instala SDD-GL como plugin nativo de Claude Code directamente desde GitHub:
 ```bash
-git clone https://github.com/CharlyZeta/sdd-gl .sdd-gl
-cp .sdd-gl/CLAUDE.md .
-cp -r .sdd-gl/protocol .
-cp -r .sdd-gl/.claude .
-mkdir -p contracts
-rm -rf .sdd-gl
+claude plugin add github:CharlyZeta/SDD-GL
+```
+O clonándolo dentro de tu directorio local de plugins de Claude:
+```bash
+git clone https://github.com/CharlyZeta/SDD-GL.git ~/.claude/plugins/sdd-gl
 ```
 
-#### Opción B: Submódulo de Git (Recomendado para actualizaciones)
-Si deseas vincular el repositorio para recibir actualizaciones fácilmente:
+#### 🤖 Método 3: Google Antigravity CLI e IDE
+Para instalar las habilidades nativas, protocolos y orquestadores en tu proyecto:
 ```bash
-git submodule add https://github.com/CharlyZeta/sdd-gl .sdd-gl
+git clone https://github.com/CharlyZeta/SDD-GL.git .sdd-tmp
+cp -r .sdd-tmp/.agents/skills .agents/skills
+cp -r .sdd-tmp/protocol protocol
+cp -r .sdd-tmp/presets presets
+cp .sdd-tmp/AGENTS.md .
+cp .sdd-tmp/CONSTITUTION.md .
+mkdir -p contracts
+rm -rf .sdd-tmp
+```
+
+#### 📦 Método 4: Submódulo de Git
+Vincula SDD-GL a tu repositorio para recibir actualizaciones upstream fácilmente:
+```bash
+git submodule add https://github.com/CharlyZeta/SDD-GL.git .sdd-gl
 cp .sdd-gl/CLAUDE.md .
+cp .sdd-gl/AGENTS.md .
 cp -r .sdd-gl/protocol .
-cp -r .sdd-gl/.claude .
+cp -r .sdd-gl/presets .
 mkdir -p contracts
 ```
 
-### 3. Configuración del Stack (Recomendado)
-Crea un archivo llamado `stack.md` en el directorio raíz para que los agentes comprendan tus tecnologías y sigan las pautas arquitectónicas del proyecto:
+---
+
+### 3. Configuración del Stack y Presets Recomendados
+Elige un preset listo para producción desde `presets/` o crea un archivo `stack.md` en el directorio raíz:
 ```markdown
 # Stack de Desarrollo
-- Lenguaje: Java 21
-- Framework: Spring Boot 3.x
-- Base de Datos: PostgreSQL
-- Pruebas: JUnit 5 + Mockito
-- Herramienta de Construcción: Maven
+- Lenguaje: Java 21 / Python 3.12 / TypeScript 5
+- Framework: Spring Boot 3.3 / FastAPI / Node.js
+- Pruebas: JUnit 5 / Pytest / Vitest
 - Estilo Arquitectónico: Arquitectura Hexagonal + DDD
 ```
 > [!NOTE]
-> Sin `stack.md`, los agentes continuarán funcionando, pero generarán código y pruebas genéricas sin apegarse a las convenciones de tu proyecto.
+> Los presets en `presets/` proporcionan configuraciones Zero-Config para Java Spring Boot, Python FastAPI y TypeScript Node.js.
 
 ---
 
