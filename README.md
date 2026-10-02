@@ -8,7 +8,7 @@
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-orange)](https://docs.claude.ai/code)
 [![Stack](https://img.shields.io/badge/stack-agnostic-lightgrey)](#3-recommended-stack-configuration)
 
-[Leer en Español](README.es.md)
+🌐 **Language:** English | [**Leer en Español 🇪🇸 (README.es.md)**](README.es.md)
 
 > *The specification is not documentation: it is the contract of completeness.*
 

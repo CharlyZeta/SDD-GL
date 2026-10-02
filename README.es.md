@@ -8,6 +8,8 @@
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-orange)](https://docs.claude.ai/code)
 [![Stack](https://img.shields.io/badge/stack-agnostic-lightgrey)](#3-configuración-del-stack-recomendado)
 
+🌐 **Idioma:** Español | [**Read in English 🇬🇧 (README.md)**](README.md)
+
 > *La especificación no es documentación: es el contrato de completitud.*
 
 SDD-GL es un framework multiplataforma y herramienta compatible con el estándar Model Context Protocol (MCP) que implementa un proceso de desarrollo guiado por especificaciones (Spec-Driven Development), diseñado específicamente para **un solo desarrollador**. Proporciona gobernanza selectiva en **Claude Code**, **Google Antigravity CLI & IDE**, **Cursor**, **Windsurf**, **VS Code** y **Zed**. Resuelve un problema fundamental: al trabajar en solitario con IA, no es práctico revisar cada microiteración, pero tampoco se puede ceder el control total en las decisiones de diseño.
