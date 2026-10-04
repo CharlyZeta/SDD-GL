@@ -86,6 +86,11 @@ const TOOLS = [
     name: 'sdd_audit_traceability',
     description: 'Audits traceability between contracts and active codebase (orphan specs vs untracked code).',
     inputSchema: { type: 'object', properties: {} }
+  },
+  {
+    name: 'sdd_generate_dashboard',
+    description: 'Compiles project telemetry and generates the Living Visual Dashboard in docs/index.html.',
+    inputSchema: { type: 'object', properties: {} }
   }
 ];
 
@@ -257,6 +262,16 @@ ${args.intent || '[Inferred from user description]'}
         untracked_domain_files: [],
         status: 'PASSED'
       };
+    }
+
+    case 'sdd_generate_dashboard': {
+      try {
+        const { generateDashboard } = require('./dashboard-gen');
+        const result = generateDashboard();
+        return result;
+      } catch (e) {
+        return { error: `Failed to generate dashboard: ${e.message}` };
+      }
     }
 
     default:

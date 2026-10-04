@@ -118,8 +118,7 @@ LOOP:
           coder-agent aplica la sugerencia del reviewer
           continue
 
-  COMPLETION REPORT (actualiza .sdd/metrics.json)
-```
+  COMPLETION REPORT (actualiza .sdd/metrics.json y regenera docs/index.html vía dashboard-gen.js)
 ```
 
 ---
