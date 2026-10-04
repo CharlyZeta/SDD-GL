@@ -5,6 +5,7 @@
 [![Version](https://img.shields.io/badge/version-0.4.0-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![MCP Protocol](https://img.shields.io/badge/MCP-Protocol%20Ready-purple)](mcp/sdd-gl-mcp-spec.md)
+[![Live Dashboard](https://img.shields.io/badge/Live%20Dashboard-GitHub%20Pages-2ea44f)](https://charlyzeta.github.io/SDD-GL/)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-orange)](https://docs.claude.ai/code)
 [![Stack](https://img.shields.io/badge/stack-agnostic-lightgrey)](#3-recommended-stack-configuration)
 
@@ -144,6 +145,90 @@ COMPLETION MAP: FEAT-0001
 
 > [!TIP]
 > The Loop will not finish execution until every item across all 4 verification layers in the Completion Map is successfully resolved (`✅`). If a localized finding occurs, the `solve-agent` automatically attempts a fast repair in $\le 3$ attempts.
+
+---
+
+## Core Benefits & Technological Advantages
+
+SDD-GL is engineered to bridge the gap between rapid AI code generation and strict software engineering rigor. Here is why the SDD-GL architecture delivers superior reliability for solo developers and teams:
+
+```mermaid
+flowchart LR
+    subgraph Governance ["1. Selective Governance"]
+        G1["Adaptive Gate<br/>(EXPRESS / STRICT)"]
+        G2["Zero Spec Hallucination"]
+    end
+
+    subgraph Quality ["2. AC/DC Multi-Layer Verification"]
+        Q1["Functional Layer (TDD)"]
+        Q2["Static & Linter Layer"]
+        Q3["Security (SAST) Layer"]
+        Q4["Architecture Constitution"]
+    end
+
+    subgraph Healing ["3. Self-Healing Auto-Repair"]
+        H1["solve-agent"]
+        H2["≤ 3 Bounded Iterations"]
+    end
+
+    subgraph Telemetry ["4. Living Telemetry & MCP"]
+        T1["Universal MCP Protocol"]
+        T2["Visual Dashboard (Pages)"]
+        T3["Traceability Audit (FPQR)"]
+    end
+
+    Governance --> Quality
+    Quality --> Healing
+    Healing --> Telemetry
+
+    style Governance fill:#f8fafc,stroke:#64748b,stroke-width:1px
+    style Quality fill:#f0fdf4,stroke:#16a34a,stroke-width:1px
+    style Healing fill:#eff6ff,stroke:#2563eb,stroke-width:1px
+    style Telemetry fill:#faf5ff,stroke:#9333ea,stroke-width:1px
+```
+
+### 1. 🎯 Selective Governance: Eliminate AI Hallucinations & Review Fatigue
+- **The Problem**: Reading thousands of lines of LLM-generated code causes *review fatigue*, while giving AI complete autonomy inevitably introduces subtle architectural drift and hallucinated business logic.
+- **The SDD-GL Solution**: Human judgment is focused exclusively at the **Gate** (approving the specification contract). Once approved, the **Glass Box Loop** executes autonomously. If an unspecified scenario emerges, the loop halts immediately and escalates back to the developer via the Ambiguity Log rather than making unfounded assumptions.
+- **Adaptive Gate Flexibility**: Choose between ⚡ **`GATE-EXPRESS`** (1-step generation for hotfixes & atomic features) and 🛡️ **`GATE-STRICT`** (section-by-section checkpoints for complex domains).
+
+### 2. 🛡️ AC/DC Layered Verification: 4 Compulsory Quality Guardrails
+Traditional AI assistants only check if code compiles or basic tests pass. SDD-GL enforces four distinct verification layers across the entire Completion Map:
+1. **Functional Layer**: Verifies all Acceptance Criteria (GIVEN/WHEN/THEN), Business Rules (invariants), and Alternative Flows.
+2. **Static Layer**: Guarantees zero syntax errors, 100% strict type safety, and complete linter conformity.
+3. **Security Layer**: Executes SAST scans, audits dependencies, blocks secret leaks, and checks for CWE vulnerabilities.
+4. **Architecture Layer**: Enforces module boundaries, layering constraints, and architectural invariants declared in `CONSTITUTION.md`.
+
+### 3. ⚡ Deterministic Self-Healing (`solve-agent`)
+- When minor lint, syntax, import, or typing errors arise during verification, invoking full coder agents wastes context and time.
+- The specialized **`solve-agent`** performs surgical auto-repairs in $\le 3$ bounded attempts without altering business logic or software architecture, significantly accelerating delivery and cutting LLM token overhead.
+
+### 4. 🔌 Universal Model Context Protocol (MCP) Standard
+- SDD-GL is a first-class **Model Context Protocol** server (`@sdd-gl/mcp-server`).
+- Run the exact same spec-driven governance across **Cursor**, **Windsurf**, **Claude Code & Desktop**, **Google Antigravity CLI & IDE**, **VS Code** (Cline/Roo), and **Zed** with zero lock-in.
+- Exposes 8 standardized tools: `sdd_create_contract`, `sdd_validate_gate`, `sdd_step_loop`, `sdd_log_ambiguity`, `sdd_get_status`, `sdd_get_metrics`, `sdd_audit_traceability`, and `sdd_generate_dashboard`.
+
+### 5. 📈 Quantified Quality Metrics & Continuous Traceability
+- **First-Pass Quality Rate (FPQR)**: Measure the percentage of contracts resolved without gate re-escalations via `/sdd-metrics`.
+- **Traceability Audit**: Continuous scan via `/sdd-audit` to detect orphan specifications or untracked domain code.
+- **Glass Box Audit Logs**: Every execution step writes an inspectable trail to `.sdd/runs/` with diffs, outputs, and reasoning.
+
+---
+
+## Living Visual Dashboard & Public Telemetry
+
+SDD-GL includes an interactive, publication-ready **Living Visual Dashboard** hosted live on GitHub Pages:
+
+👉 **[View Live Dashboard on GitHub Pages](https://charlyzeta.github.io/SDD-GL/)**
+
+![Living Dashboard Preview](assets/sdd-gl-cover.png)
+
+### Key Dashboard Capabilities
+* 📊 **First-Pass Quality Rate (FPQR)** & Test Completion Gauges updated with every cycle.
+* 🛡️ **4-Layer Verification Heatmaps** (Functional, Static Analysis, Security SAST, Architecture Guard).
+* 🌐 **Multi-Platform Ecosystem Telemetry**: Visual breakdown of MCP requests across Cursor, Windsurf, Claude Code, Antigravity, VS Code, and Zed.
+* 📋 **Feature vs. Bugfix Throughput**: Tracks resolution speed and retry statistics across active contracts.
+* 🔒 **Privacy-by-Design & Zero-PII**: All public telemetry is completely sanitized and aggregated. No usernames, email addresses, repository tokens, or absolute local filesystem paths (`C:\...`) are ever stored or published.
 
 ---
 
@@ -328,6 +413,21 @@ Total Contracts Inspected: 4
 Specification Coverage Score: 95.0%
 Status: ✅ All specifications verified across active codebase.
 =============================================
+```
+
+### Generating the Living Visual Dashboard
+To generate or update the standalone HTML visual dashboard with real-time metrics and telemetry:
+```bash
+# Via Node.js generator (outputs to docs/index.html)
+node mcp/dashboard-gen.js
+
+# Or invoke the MCP tool from your IDE
+# Tool: sdd_generate_dashboard
+```
+Output:
+```
+📊 Living Dashboard generated successfully at: docs/index.html
+🌐 Ready for deployment to GitHub Pages or local browser inspection.
 ```
 
 ---
@@ -580,9 +680,9 @@ Cycle 3: AC-001 ✅, AC-002 ✅, AC-003 ✅ → Final Status: RESOLVED
 - It does not guarantee test quality if the underlying contract has logical flaws or is poorly written.
 - It requires a compatible runtime (such as Claude Code or Antigravity CLI) to run the agent workflows.
 
-### Known Limitations (Version 0.3.0)
+### Known Limitations (Version 0.4.0)
 * **Immutable Completion Map**: The Completion Map is generated once upon transitioning to Loop mode. If the contract is manually edited while the Loop is active, the map will not automatically resynchronize until the next cycle.
-* **No Dependency Trees**: Native support for declaring prerequisites between contracts (e.g., `depends_on: FEAT-0001`) is scheduled for v0.4.0.
+* **No Dependency Trees**: Native support for declaring prerequisites between contracts (e.g., `depends_on: FEAT-0001`) is scheduled for v0.5.0.
 
 ---
 
@@ -598,6 +698,8 @@ sdd-gl/
 ├── AGENTS.md              ← Orchestrator for Antigravity CLI and IDE.
 ├── CONSTITUTION.md        ← Project-wide architectural laws & security guardrails.
 ├── LICENSE                ← Project software license (MIT).
+├── docs/
+│   └── index.html         ← Standalone Living Visual Dashboard (GitHub Pages).
 ├── protocol/
 │   ├── contract.md        ← Specification format, inference rules & multi-layer Completion Map.
 │   ├── gate.md            ← Adaptive Gate protocol (EXPRESS vs. STRICT).
@@ -609,6 +711,7 @@ sdd-gl/
 ├── mcp/                   ← Model Context Protocol (MCP) Server.
 │   ├── package.json       ← Node.js MCP server manifest (@sdd-gl/mcp-server).
 │   ├── server.js          ← Executable stdio JSON-RPC server with complete tool suite.
+│   ├── dashboard-gen.js   ← Visual dashboard generator engine with sanitized telemetry.
 │   └── sdd-gl-mcp-spec.md ← Tool schemas and multi-client config instructions.
 ├── assets/
 │   └── sdd-gl-cover.png   ← Architecture banner and diagram assets.
