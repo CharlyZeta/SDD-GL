@@ -239,27 +239,38 @@ Sigue esta guía paso a paso para configurar y comenzar a utilizar SDD-GL en tu 
 
 ### 1. Requisitos Previos
 - **Node.js** (versión `>= 18.0.0`) para la ejecución del Servidor MCP.
-- Cualquier cliente de IA compatible: **Cursor**, **Windsurf**, **Claude Desktop / Claude Code**, **Google Antigravity CLI & IDE**, **VS Code** (con Cline/Roo Code) o **Zed**.
+- Cualquier cliente de IA compatible: **Cursor**, **Windsurf**, **Claude Desktop / Claude Code**, **OpenCode**, **Warp**, **Google Antigravity CLI & IDE**, **VS Code** (con Cline/Roo Code) o **Zed**.
 - Un proyecto de desarrollo controlado bajo un repositorio de **Git**.
 
 ---
 
 ### 2. Elige tu Método de Instalación
 
-#### 🌐 Método 1: Servidor MCP Universal (Cursor, Windsurf, Claude Desktop, VS Code)
-Sin necesidad de clonar repositorios manualmente. Añade el servidor MCP directamente desde GitHub a la configuración de tu IDE (`~/.cursor/mcp.json`, `claude_desktop_config.json` o configuración MCP de Cline):
+#### 🌐 Método 1: Servidor MCP Universal (Cursor, Windsurf, OpenCode, Warp, Claude Desktop, VS Code)
+Sin necesidad de clonar repositorios manualmente. Añade el servidor MCP directamente desde GitHub a la configuración de tu IDE o cliente de terminal (`~/.cursor/mcp.json`, `claude_desktop_config.json`, configuración de OpenCode o Cline MCP):
 
 ```json
 {
   "mcpServers": {
     "sdd-gl": {
       "command": "npx",
-      "args": ["-y", "github:CharlyZeta/SDD-GL", "mcp/server.js"]
+      "args": ["-y", "github:CharlyZeta/SDD-GL"]
     }
   }
 }
 ```
-*Equipa instantáneamente al chat de tu IDE con 7 herramientas nativas: `sdd_create_contract`, `sdd_validate_gate`, `sdd_step_loop`, `sdd_log_ambiguity`, `sdd_get_status`, `sdd_get_metrics` y `sdd_audit_traceability`.*
+*O configúralo de forma local si clonaste el repositorio:*
+```json
+{
+  "mcpServers": {
+    "sdd-gl": {
+      "command": "node",
+      "args": ["./mcp/server.js"]
+    }
+  }
+}
+```
+*Equipa instantáneamente a tu entorno con 8 herramientas nativas: `sdd_create_contract`, `sdd_validate_gate`, `sdd_step_loop`, `sdd_log_ambiguity`, `sdd_get_status`, `sdd_get_metrics`, `sdd_audit_traceability` y `sdd_generate_dashboard`.*
 
 #### ⚡ Método 2: Plugin para Claude Code
 En tu terminal, instala SDD-GL como plugin nativo de Claude Code directamente desde GitHub:

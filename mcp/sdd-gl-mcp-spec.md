@@ -79,25 +79,25 @@ Genera el tablero de estado consolidado de todos los contratos del repositorio.
 
 ## 3. Configuración en Clientes MCP
 
-### Configuración en Claude Desktop / Claude Code (`claude_desktop_config.json`):
+### Configuración Universal Remota (Cursor, Windsurf, OpenCode, Warp, Claude Desktop, VS Code, Zed):
 ```json
 {
   "mcpServers": {
     "sdd-gl": {
       "command": "npx",
-      "args": ["-y", "@sdd-gl/mcp-server"]
+      "args": ["-y", "github:CharlyZeta/SDD-GL"]
     }
   }
 }
 ```
 
-### Configuración en Cursor / Windsurf (`.cursor/mcp.json` o settings):
+### Configuración Local (Entorno de Desarrollo):
 ```json
 {
   "mcpServers": {
     "sdd-gl": {
       "command": "node",
-      "args": ["./node_modules/@sdd-gl/mcp-server/dist/index.js"]
+      "args": ["./mcp/server.js"]
     }
   }
 }
