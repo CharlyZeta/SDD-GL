@@ -8,13 +8,23 @@
 const fs = require('fs');
 const path = require('path');
 
-const PROJECT_ROOT = path.resolve(__dirname, '..');
-const CONTRACTS_DIR = path.join(PROJECT_ROOT, 'contracts');
-const DOCS_DIR = path.join(PROJECT_ROOT, 'docs');
-const METRICS_FILE = path.join(PROJECT_ROOT, '.sdd', 'metrics.json');
-const RUNS_DIR = path.join(PROJECT_ROOT, '.sdd', 'runs');
+function getProjectRoot(customRoot) {
+  if (customRoot) return customRoot;
+  if (process.env.SDD_PROJECT_ROOT) return process.env.SDD_PROJECT_ROOT;
+  const cwd = process.cwd();
+  if (fs.existsSync(path.join(cwd, 'contracts')) || fs.existsSync(path.join(cwd, '.sdd'))) {
+    return cwd;
+  }
+  return path.resolve(__dirname, '..');
+}
 
-function generateDashboard() {
+function generateDashboard(customRoot) {
+  const PROJECT_ROOT = getProjectRoot(customRoot);
+  const CONTRACTS_DIR = path.join(PROJECT_ROOT, 'contracts');
+  const DOCS_DIR = path.join(PROJECT_ROOT, 'docs');
+  const METRICS_FILE = path.join(PROJECT_ROOT, '.sdd', 'metrics.json');
+  const RUNS_DIR = path.join(PROJECT_ROOT, '.sdd', 'runs');
+
   if (!fs.existsSync(DOCS_DIR)) {
     fs.mkdirSync(DOCS_DIR, { recursive: true });
   }
