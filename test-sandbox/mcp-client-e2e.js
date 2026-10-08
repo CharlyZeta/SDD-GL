@@ -4,17 +4,26 @@
  */
 
 const { spawn } = require('child_process');
+const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const assert = require('assert');
 
 const SERVER_PATH = path.join(__dirname, '..', 'mcp', 'server.js');
+const REPO_ROOT = path.join(__dirname, '..');
 
 function runMcpTest() {
   console.log('🔌 [MCP Client] Iniciando conexión con el servidor SDD-GL MCP...');
-  
+
+  // Tests must never touch the real repository (BR-003): the server is pointed
+  // to a unique temp directory via the SDD_PROJECT_ROOT environment variable.
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-gl-e2e-'));
+  const cleanupTmpRoot = () => fs.rmSync(tmpRoot, { recursive: true, force: true });
+
   const server = spawn('node', [SERVER_PATH], {
     stdio: ['pipe', 'pipe', 'inherit'],
-    cwd: path.join(__dirname, '..')
+    cwd: REPO_ROOT,
+    env: { ...process.env, SDD_PROJECT_ROOT: tmpRoot }
   });
 
   let messageId = 1;
@@ -66,7 +75,7 @@ function runMcpTest() {
       assert.ok(toolNames.includes('sdd_get_metrics'));
       assert.ok(toolNames.includes('sdd_audit_traceability'));
 
-      // 3. Create Contract (FEAT-0005)
+      // 3. Create Contract (empty tmp root -> next correlational ID: FEAT-0001)
       console.log('\n3️⃣ Invocando herramienta: sdd_create_contract...');
       const createRes = await sendRequest('tools/call', {
         name: 'sdd_create_contract',
@@ -81,6 +90,18 @@ function runMcpTest() {
       console.log('   ✅ Contrato creado:', createData);
       assert.strictEqual(createData.success, true);
       const contractId = createData.contract_id;
+
+      // Isolation assertions: the contract must live inside tmpRoot (AF-03)
+      // and never inside the real repository (BR-003).
+      const resolvedContractPath = path.resolve(createData.path);
+      assert.ok(
+        resolvedContractPath.startsWith(path.resolve(tmpRoot) + path.sep),
+        `Contract path must be inside tmpRoot (${tmpRoot}): ${createData.path}`
+      );
+      assert.ok(
+        !resolvedContractPath.startsWith(path.resolve(REPO_ROOT) + path.sep),
+        `Contract path must NOT be inside the real repo (${REPO_ROOT}): ${createData.path}`
+      );
 
       // 4. Validate Gate
       console.log(`\n4️⃣ Invocando herramienta: sdd_validate_gate (${contractId})...`);
@@ -124,10 +145,12 @@ function runMcpTest() {
 
       console.log('\n🎉 ¡TODAS LAS PRUEBAS DEL SERVIDOR MCP PASARON SATISFACTORIAMENTE AL 100%!');
       server.kill();
+      cleanupTmpRoot();
       process.exit(0);
     } catch (err) {
       console.error('\n❌ Error durante la prueba MCP:', err);
       server.kill();
+      cleanupTmpRoot();
       process.exit(1);
     }
   }

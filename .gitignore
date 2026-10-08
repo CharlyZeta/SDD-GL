@@ -4,6 +4,14 @@
 # Stack local (no commitear si tiene datos sensibles)
 # stack.md
 
+# Informe de evaluación externa (generado por agente Copilot — no forma parte del repo)
+EVALUATION.md
+
+# Trabajo SDD-GL privado (specs de trabajo, roadmap y auditorías Glass Box) — solo local
+contracts/*
+!contracts/.gitkeep
+.sdd/
+
 # OS
 .DS_Store
 Thumbs.db

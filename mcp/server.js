@@ -9,7 +9,7 @@ const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
 
-const PROJECT_ROOT = process.cwd();
+const PROJECT_ROOT = process.env.SDD_PROJECT_ROOT || process.cwd();
 const CONTRACTS_DIR = path.join(PROJECT_ROOT, 'contracts');
 const SDD_RUNS_DIR = path.join(PROJECT_ROOT, '.sdd', 'runs');
 const METRICS_FILE = path.join(PROJECT_ROOT, '.sdd', 'metrics.json');
@@ -18,6 +18,22 @@ const METRICS_FILE = path.join(PROJECT_ROOT, '.sdd', 'metrics.json');
 function ensureDirs() {
   if (!fs.existsSync(CONTRACTS_DIR)) fs.mkdirSync(CONTRACTS_DIR, { recursive: true });
   if (!fs.existsSync(SDD_RUNS_DIR)) fs.mkdirSync(SDD_RUNS_DIR, { recursive: true });
+}
+
+// Pure helper: computes the next correlational contract ID from a list of file names.
+// Only files matching "<TYPE>-<number>.md" are parsed. Numbers >= 9000 are excluded
+// (reserved range for validation/sandbox contracts, e.g. FEAT-9999).
+// Next ID = max(correlational numbers) + 1, or the first ID when none exist (BR-001).
+function computeNextContractId(files, type) {
+  const pattern = new RegExp(`^${type}-(\\d+)\\.md$`);
+  const numbers = files
+    .map(file => {
+      const match = file.match(pattern);
+      return match ? parseInt(match[1], 10) : null;
+    })
+    .filter(n => n !== null && n < 9000);
+  const next = (numbers.length > 0 ? Math.max(...numbers) : 0) + 1;
+  return `${type}-${String(next).padStart(4, '0')}`;
 }
 
 // Tool definitions for MCP tools/list
@@ -101,11 +117,15 @@ function handleToolCall(name, args) {
   switch (name) {
     case 'sdd_create_contract': {
       const type = args.type.toUpperCase();
-      const files = fs.readdirSync(CONTRACTS_DIR).filter(f => f.startsWith(type + '-'));
-      const nextNum = String(files.length + 1).padStart(4, '0');
-      const id = `${type}-${nextNum}`;
+      const files = fs.readdirSync(CONTRACTS_DIR);
+      const id = computeNextContractId(files, type);
       const gateMode = args.gate_mode || (type === 'FIX' ? 'EXPRESS' : 'STRICT');
       const filepath = path.join(CONTRACTS_DIR, `${id}.md`);
+
+      // Never overwrite an existing contract file (BR-002)
+      if (fs.existsSync(filepath)) {
+        return { error: `Contract ${id} already exists. Aborting to avoid overwrite.` };
+      }
 
       const content = `# CONTRACT: ${args.title}
 # ID: ${id}
@@ -343,4 +363,8 @@ function main() {
   });
 }
 
-main();
+module.exports = { TOOLS, handleToolCall, computeNextContractId };
+
+if (require.main === module) {
+  main();
+}

@@ -11,7 +11,7 @@
   "scripts": {
     "start": "node mcp/server.js",
     "dashboard": "node mcp/dashboard-gen.js",
-    "test": "node test-sandbox/multilayer-verifier.test.js && node test-sandbox/escrow.test.js && node test-sandbox/mcp-client-e2e.js"
+    "test": "node test-sandbox/id-generation.test.js && node test-sandbox/multilayer-verifier.test.js && node test-sandbox/escrow.test.js && node test-sandbox/mcp-client-e2e.js"
   },
   "keywords": [
     "mcp",
