@@ -1,8 +1,16 @@
 /**
- * ID Generation & Non-Destructive Suite Tests (FEAT-0006)
+ * ID Generation & Non-Destructive Suite Tests (FEAT-0006) + Privacy Policy (FEAT-0012)
  *
  * Cubre los criterios funcionales del Contract FEAT-0006:
  *   AC-001..AC-006, AF-01, AF-02, AF-03, BR-001..BR-005.
+ *
+ * Cubre además los invariantes de política de privacidad del Contract FEAT-0012:
+ *   - contracts/ (specs de trabajo y roadmap) y .sdd/ (auditorías Glass Box)
+ *     permanecen privados: gitignored, único trackeado contracts/.gitkeep.
+ *   - El showcase curado vive en examples/contracts/ (trackeado y público:
+ *     FEAT-0004.md, FEAT-0005.md, FEAT-9999.md).
+ *   - Ningún roadmap activo (FEAT-0006..FEAT-0011) ni auditoría .sdd/ está
+ *     publicado en el índice ni en el historial local.
  *
  * AISLAMIENTO (BR-003, crítico): `process.env.SDD_PROJECT_ROOT` se apunta a un
  * directorio temporal único ANTES de `require('../mcp/server.js')`, porque el
@@ -14,6 +22,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { execSync } = require('child_process');
 
 const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-gl-idtest-'));
 process.env.SDD_PROJECT_ROOT = tmpRoot;
@@ -26,6 +35,7 @@ const { handleToolCall, computeNextContractId } = require('../mcp/server.js');
 
 const REPO_ROOT = path.join(__dirname, '..');
 const REAL_CONTRACTS_DIR = path.join(REPO_ROOT, 'contracts');
+const SHOWCASE_DIR = path.join(REPO_ROOT, 'examples', 'contracts'); // FEAT-0012: showcase público
 const TMP_CONTRACTS_DIR = path.join(tmpRoot, 'contracts');
 
 // BR-003 / AC-003: snapshot del contracts/ REAL antes de cualquier handleToolCall.
@@ -125,29 +135,131 @@ test('BR-003 / AC-003: la suite no modifica contracts/ real y createData.path vi
   );
 });
 
-// AC-005: assertion:FEAT-0006-ac005 (estado del repo: FEAT-0005 restaurado)
-test('AC-005: GIVEN contracts/FEAT-0005.md WHEN se lee THEN contiene Living Visual Dashboard en Status: RESOLVED', () => {
-  const content = fs.readFileSync(path.join(REAL_CONTRACTS_DIR, 'FEAT-0005.md'), 'utf8');
+// AC-005: assertion:FEAT-0006-ac005 (estado del repo: showcase FEAT-0005 re-apuntado
+// a examples/contracts/ según la política de privacidad de FEAT-0012)
+test('AC-005: GIVEN examples/contracts/FEAT-0005.md WHEN se lee THEN contiene Living Visual Dashboard en Status: RESOLVED', () => {
+  const content = fs.readFileSync(path.join(SHOWCASE_DIR, 'FEAT-0005.md'), 'utf8');
   assert.ok(content.includes('Living Visual Dashboard'), 'FEAT-0005 debe describir el Living Visual Dashboard');
   assert.ok(content.includes('# Status: RESOLVED'), 'FEAT-0005 debe estar en Status: RESOLVED');
 });
 
 // AC-006: assertion:FEAT-0006-ac006 | BR-005: unit-test:FEAT-0006-br005 (estado del repo)
-test('AC-006 / BR-005: contracts/FEAT-0003.md no existe y ningún ID de contrato está duplicado', () => {
+// FEAT-0012: los showcase viven ahora en examples/contracts/, por lo que la ausencia
+// del placeholder FEAT-0003 y la unicidad de IDs se verifican sobre la UNIÓN de
+// contracts/ (trabajo local) y examples/contracts/ (showcase público).
+test('AC-006 / BR-005: FEAT-0003.md no existe (ni en contracts/ ni en examples/contracts/) y ningún ID de contrato está duplicado en la unión', () => {
   assert.strictEqual(
     fs.existsSync(path.join(REAL_CONTRACTS_DIR, 'FEAT-0003.md')),
     false,
     'el placeholder huérfano FEAT-0003.md debió eliminarse'
   );
+  assert.strictEqual(
+    fs.existsSync(path.join(SHOWCASE_DIR, 'FEAT-0003.md')),
+    false,
+    'FEAT-0003.md no debe existir en el showcase público'
+  );
 
-  const ids = fs
-    .readdirSync(REAL_CONTRACTS_DIR)
+  const ids = [REAL_CONTRACTS_DIR, SHOWCASE_DIR]
+    .flatMap(dir => fs.readdirSync(dir))
     .filter(file => /^(FEAT|FIX)-(\d+)\.md$/.test(file))
     .map(file => file.replace(/\.md$/, ''));
-  assert.ok(ids.length > 0, 'deben existir contratos parseables en contracts/');
+  // En un clon nuevo contracts/ puede no aportar ningún .md de contrato (solo
+  // .gitkeep): la población la garantiza el showcase (3 contratos), por eso el
+  // assertion de no-vacío se evalúa sobre la unión de ambos directorios.
+  assert.ok(ids.length > 0, 'deben existir contratos parseables en contracts/ + examples/contracts/');
   assert.strictEqual(
     new Set(ids).size,
     ids.length,
     `IDs de contrato duplicados detectados: ${ids.join(', ')}`
   );
 });
+
+// ============================================================================
+// FEAT-0012 — Política de privacidad: contracts/ y .sdd/ privados, showcase
+// público en examples/contracts/. Los comandos git aquí usados son de SOLO
+// LECTURA (ls-files / log) y no mutan el índice ni la historia.
+// ============================================================================
+
+// Ejecuta un comando git de solo lectura en la raíz del repo:
+// stdin ignorado, stdout capturado, stderr ignorado.
+const git = args =>
+  execSync(`git ${args}`, {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'ignore'],
+  });
+
+const GITIGNORE_CONTENT = fs.readFileSync(path.join(REPO_ROOT, '.gitignore'), 'utf8');
+
+// BR-001: unit-test:FEAT-0012-br001 | AC-001: assertion:FEAT-0012-ac001
+test('FEAT-0012 BR-001 / AC-001: .gitignore ignora contracts/ y .sdd/ y solo contracts/.gitkeep queda trackeado', () => {
+  assert.ok(GITIGNORE_CONTENT.includes('contracts/*'), '.gitignore debe contener la entrada contracts/*');
+  assert.ok(GITIGNORE_CONTENT.includes('!contracts/.gitkeep'), '.gitignore debe re-incluir !contracts/.gitkeep');
+  assert.ok(GITIGNORE_CONTENT.includes('.sdd/'), '.gitignore debe contener la entrada .sdd/');
+
+  const tracked = git('ls-files contracts .sdd').trim();
+  assert.strictEqual(
+    tracked,
+    'contracts/.gitkeep',
+    `el único archivo trackeado en contracts/ y .sdd/ debe ser contracts/.gitkeep; se obtuvo: ${tracked}`
+  );
+});
+
+// AC-002: assertion:FEAT-0012-ac002 | BR-002: unit-test:FEAT-0012-br002
+test('FEAT-0012 AC-002 / BR-002: examples/contracts/ contiene exactamente los 3 showcase (FEAT-0004, FEAT-0005, FEAT-9999)', () => {
+  const files = fs.readdirSync(SHOWCASE_DIR).sort();
+  assert.deepStrictEqual(
+    files,
+    ['FEAT-0004.md', 'FEAT-0005.md', 'FEAT-9999.md'],
+    `examples/contracts/ debe contener exactamente el showcase curado; se obtuvo: ${files.join(', ')}`
+  );
+});
+
+// AF-01: unit-test:FEAT-0012-af01 | AC-003: assertion:FEAT-0012-ac003
+// Resiliencia a clon nuevo: todo lo que los tests de estado leen (los showcase de
+// examples/contracts/) está trackeado, y contracts/ no aporta contenido del que
+// la suite dependa (solo .gitkeep).
+test('FEAT-0012 AF-01 / AC-003: en un clon nuevo, todo lo que leen los tests de estado está trackeado', () => {
+  const showcaseTracked = git('ls-files examples/contracts').trim().split(/\r?\n/).sort();
+  assert.deepStrictEqual(
+    showcaseTracked,
+    ['examples/contracts/FEAT-0004.md', 'examples/contracts/FEAT-0005.md', 'examples/contracts/FEAT-9999.md'],
+    `los 3 showcase deben estar trackeados en examples/contracts/; se obtuvo: ${showcaseTracked.join(', ')}`
+  );
+
+  const contractsTracked = git('ls-files contracts').trim();
+  assert.strictEqual(
+    contractsTracked,
+    'contracts/.gitkeep',
+    `contracts/ solo debe trackear .gitkeep (los tests de estado no dependen de contenido no-trackeado); se obtuvo: ${contractsTracked}`
+  );
+});
+
+// BR-003: unit-test:FEAT-0012-br003 | AC-004: assertion:FEAT-0012-ac004
+test('FEAT-0012 BR-003 / AC-004: ningún roadmap activo (contracts/FEAT|FIX-*.md) ni auditoría .sdd/ fue publicado', () => {
+  // a) El índice del repo no trackea ningún contrato de trabajo ni ruta de .sdd/.
+  const allTracked = git('ls-files').trim().split(/\r?\n/);
+  const leaked = allTracked.filter(
+    p => /^contracts\/(FEAT|FIX)-\d+\.md$/.test(p) || /^\.sdd\//.test(p)
+  );
+  assert.deepStrictEqual(
+    leaked,
+    [],
+    `no debe haber rutas privadas trackeadas; se detectaron: ${leaked.join(', ')}`
+  );
+
+  // b) contracts/FEAT-0006.md nunca fue commiteado en ninguna rama local.
+  const log = git('log --all --format=%h -- contracts/FEAT-0006.md').trim();
+  assert.strictEqual(
+    log,
+    '',
+    'contracts/FEAT-0006.md (roadmap activo) no debe aparecer en el historial de ninguna rama local'
+  );
+});
+
+// NOT_WRITABLE (FEAT-0012):
+// - BR-004 (suite completa en verde): no es una aserción unitaria de este archivo;
+//   se verifica ejecutando la suite completa (npm test) dentro del Loop.
+// - BR-005 (no-rewrite de la historia ya publicada de los showcase): su
+//   verificación corresponde al orquestador (sin purge/rebase); no es una
+//   invariante unit-testeable aquí.

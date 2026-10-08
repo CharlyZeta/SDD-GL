@@ -758,7 +758,9 @@ sdd-gl/
 │   ├── sdd-tester-agent/
 │   ├── sdd-verifier-agent/
 │   └── sdd-solve-agent/
-└── contracts/             ← Output directory for project specification contracts.
+├── examples/
+│   └── contracts/          ← Public showcase contracts (case studies & resolved examples).
+└── contracts/              ← Local working directory for specs (gitignored — private).
     └── .gitkeep
 ```
 
