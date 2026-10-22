@@ -39,6 +39,21 @@ Legible para el humano en modo Gate, parseable por el Loop para inferir criterio
 ## Entities Affected
 - [Entidad]: [atributos relevantes o invariantes]
 
+## Inferred Assumptions
+
+Sección opcional y no-normativa (no genera Completion Map).
+Formato de cada supuesto inferido por el requirements-agent:
+```
+- [ ] AS-[NN]: [decisión asumida] → [impacto si es falso]
+```
+Estados posibles:
+- `- [ ]` — abierto (bloquea aprobación, BR-003)
+- `- [x] CONFIRMED` — confirmado por humano en HO-GATE
+- `- [x] REFUTED — [resolución]` — refutado; secciones dependientes regeneradas (AF-01)
+Si no hay inferencias relevantes: `- [x] Ninguno`
+
+---
+
 ## Ambiguity Log
 - [ ]
 

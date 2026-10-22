@@ -305,3 +305,50 @@ describe('FEAT-0008 — Acceptance Criteria', () => {
     }
   });
 });
+
+describe('FEAT-0012 isolation — showcase mode', () => {
+  test('the public dashboard renders only examples/contracts and ignores private state', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-dash-showcase-'));
+    try {
+      fs.mkdirSync(path.join(root, 'contracts'), { recursive: true });
+      fs.mkdirSync(path.join(root, 'examples', 'contracts'), { recursive: true });
+      fs.mkdirSync(path.join(root, '.sdd'), { recursive: true });
+
+      fs.writeFileSync(path.join(root, 'contracts', 'FEAT-9998.md'),
+        '# CONTRACT: Private roadmap item\n# ID: FEAT-9998\n# Status: APPROVED\n# Mode: LOOP\n# Gate-Mode: STRICT\n', 'utf8');
+      fs.writeFileSync(path.join(root, 'examples', 'contracts', 'FEAT-9100.md'),
+        '# CONTRACT: Public showcase item\n# ID: FEAT-9100\n# Status: RESOLVED\n# Mode: LOOP\n# Gate-Mode: EXPRESS\n', 'utf8');
+      fs.writeFileSync(path.join(root, '.sdd', 'metrics.json'),
+        JSON.stringify({ schema_version: 1, last_updated: new Date().toISOString(), first_pass_quality_rate: 42.5 }), 'utf8');
+      fs.writeFileSync(path.join(root, '.sdd', 'usage.json'),
+        JSON.stringify({ schema_version: 1, sessions: 7, clients: { 'private-client@1.0': 3 }, tools: { sdd_step_loop: 9 }, totals: { calls: 9, errors: 0 } }), 'utf8');
+
+      const result = generateDashboard(root, { publicShowcase: true });
+      const html = fs.readFileSync(result.path, 'utf8');
+
+      assert.strictEqual(result.scope, 'public-showcase');
+      assert.strictEqual(result.path, path.join(root, 'docs', 'index.html'));
+      assert.ok(html.includes('FEAT-9100'), 'showcase contract must be rendered');
+      assert.ok(!html.includes('FEAT-9998'), 'private working contract must never leak');
+      assert.ok(!html.includes('42.5'), 'private quality telemetry must not leak');
+      assert.ok(!html.includes('private-client@1.0'), 'private usage telemetry must not leak');
+      assert.match(html, /dashboard público del showcase/);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test('local mode writes outside the published docs/ directory', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-dash-local-'));
+    try {
+      fs.mkdirSync(path.join(root, 'contracts'), { recursive: true });
+      const result = generateDashboard(root);
+
+      assert.strictEqual(result.scope, 'local');
+      assert.strictEqual(result.path, path.join(root, '.sdd', 'dashboard.html'));
+      assert.ok(!result.path.includes(`${path.sep}docs${path.sep}`), 'local dashboard must not land in docs/');
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+});

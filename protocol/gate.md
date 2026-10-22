@@ -45,6 +45,7 @@ El modo Gate evalúa el perfil de gobernanza especificado en el encabezado `# Ga
 | Business Rules      | Al menos 1 BR-XXX expresado como invariante verificable   |
 | Acceptance Criteria | Al menos 1 AC-XXX en formato GIVEN/WHEN/THEN              |
 | Ambiguity Log       | Sin ítems `- [ ]` sin resolver                            |
+| Inferred Assumptions | Sin ítems `- [ ]`; si no hay inferencias → `- [x] Ninguno` (AF-03; BR-006) |
 
 ##### B. Para contratos de Bugfix (ID: FIX-XXXX):
 
@@ -53,10 +54,11 @@ El modo Gate evalúa el perfil de gobernanza especificado en el encabezado `# Ga
 | Reproduction Steps  | Al menos 3 pasos numerados                                |
 | Acceptance Criteria | Al menos 1 AC-XXX (por ejemplo, AC-001) en GIVEN/WHEN/THEN |
 | Ambiguity Log       | Sin ítems `- [ ]` sin resolver                            |
+| Inferred Assumptions | Sin ítems `- [ ]`; si no hay inferencias → `- [x] Ninguno` (BR-006) |
 
 *Regla de avance:* En modo `STRICT`, si alguna condición falla → completar **una sola sección** y detenerse. En modo `EXPRESS` → completar todas las secciones pendientes y avanzar directo a la consistencia.
 
-### Paso 3 — Análisis de consistencia interna
+### Paso 3 — Verificación de consistencia interna (actualizada)
 
 Antes de presentar el Contract como aprobable, verificar:
 
@@ -64,8 +66,10 @@ Antes de presentar el Contract como aprobable, verificar:
   Ejemplo: BR dice "monto > 0" pero AC dice "monto=0 es aceptado".
 - ¿Algún AC-XXX referencia datos o fuentes no definidas en el Contract?
 - ¿Dos BR-XXX se contradicen entre sí?
+- ¿Alguno de los AC-XXX depende de una inferencia cuyo valor esperado proviene de un AS-XX no registrado?
+  (Revisión de consistencia: reviewer-agent verifica que ningún AC XX dependa de supuestos tácitos.)
 
-Si se detecta contradicción → escribir en Ambiguity Log con formato:
+Si se detecta contradicción o dependencia no registrada → escribir en Ambiguity Log con formato:
 ```
 - [ ] [ID-A] vs [ID-B]: [descripción de la contradicción y opciones de resolución]
 ```
@@ -75,7 +79,7 @@ Detenerse. No presentar como aprobable hasta que el humano resuelva.
 
 Cuando el Contract pasa el checklist correspondiente y la consistencia:
 
-#### Para FEAT-XXXX:
+#### Para FEAT-XXXX (incluido FEAT-0014):
 ```
 ✅ Contract completo y consistente: contracts/[ID].md
 
@@ -85,12 +89,17 @@ Resumen:
   - N Business Rules (BR-001..BR-N)
   - N Acceptance Criteria (AC-001..AC-N)
 
+Supuestos inferidos:
+  - Total AS-XX: X (Y confirmados, Z refutados, A abiertos)
+
 Criterios que inferirá el Loop:
   - 1 integration test (Main Flow)
   - N unit tests (AF-XX)
   - N unit tests (BR-XXX)
   - N assertions (AC-XXX)
   Total: N criterios de completitud
+
+⚠️  Requisito para aprobación: todos los supuestos deben estar resueltos (abiertos o refutados). Inferred Assumptions bloquea la aprobación hasta que no quede ningún `- [ ]`.
 
 ⏸️  HO-GATE: cambia Status: APPROVED y Mode: LOOP para iniciar el Loop.
 ```
@@ -103,10 +112,15 @@ Resumen:
   - N pasos en Reproduction Steps
   - N Acceptance Criteria (AC-001..AC-N)
 
+Supuestos inferidos:
+  - Total AS-XX: X (Y confirmados, Z refutados, A abiertos)
+
 Criterios que inferirá el Loop:
   - 1 integration test (Reproduction Steps)
   - N assertions (AC-XXX)
   Total: N criterios de completitud
+
+⚠️  Requisito para aprobación: todos los supuestos deben estar resueltos (abiertos o refutados). Inferred Assumptions bloquea la aprobación hasta que no quede ningún `- [ ]`.
 
 ⏸️  HO-GATE: cambia Status: APPROVED y Mode: LOOP para iniciar el Loop.
 ```

@@ -56,7 +56,7 @@
       <div class="flex items-center space-x-4">
         <div class="flex items-center text-xs text-gray-400 bg-sddCard/80 px-3 py-1.5 rounded-md border border-sddBorder">
           <span class="w-2 h-2 rounded-full bg-sddEmerald animate-pulse mr-2"></span>
-          Última actualización: <span class="text-gray-200 font-mono ml-1.5">2026-10-04 23:39:24 UTC</span>
+          Última actualización: <span class="text-gray-200 font-mono ml-1.5">2026-10-22 22:27:37 UTC</span>
         </div>
         <a href="https://github.com/CharlyZeta/SDD-GL" target="_blank" class="flex items-center gap-1.5 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-xs text-white rounded-md transition font-medium border border-gray-700">
           <i data-lucide="github" class="w-4 h-4"></i> GitHub
@@ -77,9 +77,9 @@
           <span class="text-xs font-semibold uppercase tracking-wider">First-Pass Quality (FPQR)</span>
           <i data-lucide="target" class="w-5 h-5 text-sddCyan"></i>
         </div>
-        <div class="text-3xl font-extrabold text-white neon-text-cyan">88%</div>
+        <div class="text-3xl font-extrabold text-white neon-text-cyan">sin datos</div>
         <p class="text-xs text-gray-400 mt-2 flex items-center">
-          <span class="text-sddEmerald font-medium mr-1">↑ 85% FEAT</span> · 100% Bugfixes
+          <span class="text-sddEmerald font-medium mr-1">Fuente:</span> sin datos (dashboard público del showcase)
         </p>
       </div>
 
@@ -89,9 +89,9 @@
           <span class="text-xs font-semibold uppercase tracking-wider">Pruebas en las 4 Capas</span>
           <i data-lucide="shield-check" class="w-5 h-5 text-sddEmerald"></i>
         </div>
-        <div class="text-3xl font-extrabold text-white neon-text-emerald">21/21 ✅</div>
+        <div class="text-3xl font-extrabold text-white neon-text-emerald">sin datos</div>
         <p class="text-xs text-gray-400 mt-2">
-          100% Funcional, Tipos, Seguridad y Arq.
+          El ledger de calidad todavía no registró pasos.
         </p>
       </div>
 
@@ -101,9 +101,9 @@
           <span class="text-xs font-semibold uppercase tracking-wider">Tasa de Autorreparación (Solve)</span>
           <i data-lucide="wrench" class="w-5 h-5 text-sddAmber"></i>
         </div>
-        <div class="text-3xl font-extrabold text-white">≤ 3 reintentos</div>
+        <div class="text-3xl font-extrabold text-white">sin datos</div>
         <p class="text-xs text-gray-400 mt-2">
-          Promedio de reintentos por contract: <span class="text-sddAmber font-mono">0.3</span>
+          Promedio de reintentos por contract (sin telemetría registrada)
         </p>
       </div>
 
@@ -113,9 +113,9 @@
           <span class="text-xs font-semibold uppercase tracking-wider">Contratos Registrados</span>
           <i data-lucide="file-text" class="w-5 h-5 text-sddPurple"></i>
         </div>
-        <div class="text-3xl font-extrabold text-white">4</div>
+        <div class="text-3xl font-extrabold text-white">3</div>
         <p class="text-xs text-gray-400 mt-2">
-          <span class="text-sddEmerald font-semibold">2 Resueltos</span> · 0 Loop · 2 Gate
+          <span class="text-sddEmerald font-semibold">3 Resueltos</span> · 0 Loop · 0 Gate
         </p>
       </div>
     </section>
@@ -132,23 +132,23 @@
           <canvas id="layersChart"></canvas>
         </div>
         <div class="grid grid-cols-2 gap-2 mt-4 text-xs text-gray-400 pt-3 border-t border-sddBorder">
-          <div>🧪 Funcional: <span class="text-white font-mono font-bold">100%</span></div>
-          <div>🔍 Estático/Tipos: <span class="text-white font-mono font-bold">100%</span></div>
-          <div>🛡️ Seguridad SAST: <span class="text-white font-mono font-bold">100%</span></div>
-          <div>🏛️ Arquitectura: <span class="text-white font-mono font-bold">100%</span></div>
+          <div>🧪 Funcional: <span class="text-white font-mono font-bold">—</span></div>
+          <div>🔍 Estático/Tipos: <span class="text-white font-mono font-bold">—</span></div>
+          <div>🛡️ Seguridad SAST: <span class="text-white font-mono font-bold">—</span></div>
+          <div>🏛️ Arquitectura: <span class="text-white font-mono font-bold">—</span></div>
         </div>
       </div>
 
-      <!-- CHART: VERSION PROGRESSION & FIRST PASS RATE -->
+      <!-- CHART: LOCAL USAGE BY TOOL -->
       <div class="glass-card p-6 rounded-xl flex flex-col">
         <h3 class="text-sm font-semibold uppercase text-gray-300 mb-4 flex items-center gap-2">
-          <i data-lucide="trending-up" class="w-4 h-4 text-sddEmerald"></i> Evolución de Calidad Histórica
+          <i data-lucide="trending-up" class="w-4 h-4 text-sddEmerald"></i> Uso local: invocaciones por herramienta
         </h3>
         <div class="flex-1 flex items-center justify-center min-h-[200px]">
-          <canvas id="evolutionChart"></canvas>
+          <p class="text-xs text-gray-500 text-center">sin datos</p>
         </div>
         <div class="text-xs text-gray-400 mt-4 pt-3 border-t border-sddBorder text-center">
-          First-Pass Rate histórico vs. Reducción de retrabajo humano
+          sin datos (dashboard público del showcase)
         </div>
       </div>
 
@@ -159,7 +159,7 @@
             <i data-lucide="cpu" class="w-4 h-4 text-sddAmber"></i> Ecosistema Universal MCP
           </h3>
           <p class="text-xs text-gray-400 mb-4">
-            El servidor JSON-RPC stdio expone 7 herramientas universales consumidas por Cursor, Windsurf, Claude Code, Antigravity y VS Code.
+            El servidor JSON-RPC stdio expone 8 herramientas universales, consumidas por cualquier cliente MCP.
           </p>
           <div class="space-y-2 text-xs font-mono">
             <div class="flex items-center justify-between p-2 rounded bg-black/40 border border-sddBorder">
@@ -263,39 +263,36 @@
       </div>
     </section>
 
-    <!-- NEW: ANONYMIZED MCP USAGE & PLATFORM TELEMETRY -->
+    <!-- LOCAL MCP USAGE: 100% local, no global aggregation -->
     <section class="glass-card p-6 rounded-xl space-y-6">
       <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h3 class="text-base font-bold text-white flex items-center gap-2">
-            <i data-lucide="activity" class="w-5 h-5 text-sddCyan"></i> Telemetría Global del Ecosistema MCP
+            <i data-lucide="activity" class="w-5 h-5 text-sddCyan"></i> Uso local del MCP (esta máquina)
           </h3>
-          <p class="text-xs text-gray-400">Analítica agregada de plataformas de IA, volumen de requests y patrones de desarrollo (100% anónimo · Cero PII)</p>
+          <p class="text-xs text-gray-400">Invocaciones reales registradas en <code>.sdd/usage.json</code>. Sin agregación global ni llamadas de red: este HTML es tuyo y podés publicarlo como métrica de uso de la metodología.</p>
         </div>
         <div class="flex items-center gap-2 text-[10px] text-gray-400 bg-black/40 px-3 py-1.5 rounded border border-sddBorder">
-          <span class="w-2 h-2 rounded-full bg-sddEmerald"></span>
-          <span>Privacidad Garantizada: Cero Rutas Locales ni Identificadores de Usuario</span>
+          <span class="w-2 h-2 rounded-full bg-gray-600"></span>
+          <span>Fuente: sin datos (dashboard público del showcase)</span>
         </div>
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        <!-- CHART: PLATFORM DISTRIBUTION -->
+        <!-- CHART: DECLARED CLIENTS -->
         <div class="p-4 rounded-lg bg-black/30 border border-sddBorder flex flex-col justify-between">
           <div class="flex items-center justify-between mb-3">
             <h4 class="text-xs font-bold uppercase text-gray-300 flex items-center gap-1.5">
-              <i data-lucide="bot" class="w-4 h-4 text-sddCyan"></i> Plataformas / IDEs Conectados
+              <i data-lucide="bot" class="w-4 h-4 text-sddCyan"></i> Clientes declarados
             </h4>
-            <span class="text-[10px] font-mono text-sddCyan">128+ Requests</span>
+            <span class="text-[10px] font-mono text-sddCyan">sin datos</span>
           </div>
           <div class="min-h-[180px] flex items-center justify-center">
-            <canvas id="platformsChart"></canvas>
+            <p class="text-xs text-gray-500 text-center">sin datos</p>
           </div>
           <div class="grid grid-cols-2 gap-2 text-[11px] text-gray-400 pt-3 border-t border-sddBorder mt-3">
-            <div>Cursor: <strong class="text-white">42%</strong></div>
-            <div>Claude Code: <strong class="text-white">31%</strong></div>
-            <div>Antigravity: <strong class="text-white">18%</strong></div>
-            <div>Windsurf/VSCode: <strong class="text-white">9%</strong></div>
+            <div class="col-span-2">Ningún cliente se identificó (`clientInfo` autodeclarado).</div>
           </div>
         </div>
 
@@ -309,39 +306,39 @@
             <div>
               <div class="flex justify-between text-xs mb-1">
                 <span class="text-gray-400">Features vs. Fixes</span>
-                <span class="font-mono text-sddCyan">75% FEAT / 25% FIX</span>
+                <span class="font-mono text-sddCyan">100% FEAT / 0% FIX</span>
               </div>
               <div class="w-full bg-gray-800 rounded-full h-2 flex overflow-hidden">
-                <div class="bg-sddCyan h-2" style="width: 75%"></div>
-                <div class="bg-sddAmber h-2" style="width: 25%"></div>
+                <div class="bg-sddCyan h-2" style="width: 100%"></div>
+                <div class="bg-sddAmber h-2" style="width: 0%"></div>
               </div>
             </div>
 
             <div>
               <div class="flex justify-between text-xs mb-1">
                 <span class="text-gray-400">Modos de Gobernanza</span>
-                <span class="font-mono text-sddEmerald">60% STRICT / 40% EXPRESS</span>
+                <span class="font-mono text-sddEmerald">100% STRICT / 0% EXPRESS</span>
               </div>
               <div class="w-full bg-gray-800 rounded-full h-2 flex overflow-hidden">
-                <div class="bg-sddEmerald h-2" style="width: 60%"></div>
-                <div class="bg-sddPurple h-2" style="width: 40%"></div>
+                <div class="bg-sddEmerald h-2" style="width: 100%"></div>
+                <div class="bg-sddPurple h-2" style="width: 0%"></div>
               </div>
             </div>
 
             <div class="p-3 rounded bg-sddCard/60 border border-sddBorder text-xs text-gray-300 space-y-1">
               <div class="flex justify-between">
-                <span class="text-gray-400">Eficiencia Solve Auto-Repair:</span>
-                <strong class="text-sddEmerald">91.3% éxito</strong>
+                <span class="text-gray-400">Reintentos promedio por contract:</span>
+                <strong class="text-sddEmerald">sin datos</strong>
               </div>
               <div class="flex justify-between">
                 <span class="text-gray-400">Escalados a Gate por Ambigüedad:</span>
-                <strong class="text-sddAmber">8.7%</strong>
+                <strong class="text-sddAmber">sin datos</strong>
               </div>
             </div>
           </div>
 
           <div class="text-[10px] text-gray-500 text-center">
-            Métricas acumuladas a través de sesiones de desarrollo
+            Contratos contados desde <code>contracts/</code>; calidad desde <code>.sdd/metrics.json</code>
           </div>
         </div>
 
@@ -351,13 +348,13 @@
             <h4 class="text-xs font-bold uppercase text-gray-300 flex items-center gap-1.5">
               <i data-lucide="bar-chart-2" class="w-4 h-4 text-sddPurple"></i> Invocaciones por Herramienta MCP
             </h4>
-            <span class="text-[10px] font-mono text-sddPurple">Tráfico Relativo</span>
+            <span class="text-[10px] font-mono text-sddPurple">sin datos</span>
           </div>
           <div class="min-h-[180px] flex items-center justify-center">
-            <canvas id="toolsChart"></canvas>
+            <p class="text-xs text-gray-500 text-center">sin datos</p>
           </div>
           <div class="text-[10px] text-gray-500 pt-2 border-t border-sddBorder text-center">
-            sdd_step_loop domina con el 45% del volumen de ejecución autónoma
+            Todavía no hay invocaciones registradas
           </div>
         </div>
 
@@ -376,35 +373,6 @@
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        
-          <div class="p-4 rounded-lg bg-black/40 border border-sddBorder hover:border-sddCyan/50 transition space-y-3 flex flex-col justify-between">
-            <div>
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-xs font-mono font-bold text-sddCyan">FEAT-0003</span>
-                <span class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-gray-700 text-gray-300">
-                  DRAFT
-                </span>
-              </div>
-              <h4 class="text-sm font-semibold text-white line-clamp-1">Autenticación 2FA con códigos TOTP</h4>
-              <p class="text-xs text-gray-400 mt-1 line-clamp-2">Habilitar autenticación de doble factor mediante códigos QR y tokens TOTP de 6 dígitos.</p>
-            </div>
-
-            <div class="pt-3 border-t border-sddBorder/60 space-y-2">
-              <div class="flex items-center justify-between text-xs text-gray-400">
-                <span>Modo: <strong class="text-gray-200">STRICT</strong></span>
-                <span>BR: <strong class="text-gray-200">1</strong> | AC: <strong class="text-gray-200">1</strong></span>
-              </div>
-              <div>
-                <div class="flex justify-between text-[10px] text-gray-400 mb-1">
-                  <span>Progreso Completion Map</span>
-                  <span class="font-mono font-bold text-sddEmerald">0%</span>
-                </div>
-                <div class="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
-                  <div class="bg-gradient-to-r from-sddCyan to-sddEmerald h-1.5 rounded-full" style="width: 0%"></div>
-                </div>
-              </div>
-            </div>
-          </div>
         
           <div class="p-4 rounded-lg bg-black/40 border border-sddBorder hover:border-sddCyan/50 transition space-y-3 flex flex-col justify-between">
             <div>
@@ -439,26 +407,26 @@
             <div>
               <div class="flex items-center justify-between mb-2">
                 <span class="text-xs font-mono font-bold text-sddCyan">FEAT-0005</span>
-                <span class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-gray-700 text-gray-300">
-                  DRAFT
+                <span class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-sddEmerald/20 text-sddEmerald border border-sddEmerald/30">
+                  RESOLVED
                 </span>
               </div>
-              <h4 class="text-sm font-semibold text-white line-clamp-1">Autenticación 2FA con códigos TOTP</h4>
-              <p class="text-xs text-gray-400 mt-1 line-clamp-2">Habilitar autenticación de doble factor mediante códigos QR y tokens TOTP de 6 dígitos.</p>
+              <h4 class="text-sm font-semibold text-white line-clamp-1">Living Visual Dashboard & GitHub Pages Telemetry Generator</h4>
+              <p class="text-xs text-gray-400 mt-1 line-clamp-2">Implementar un generador de Dashboard HTML interactivo, visual y publicable en GitHub Pages (`docs/index.html`), que procese y presente en tiempo real las métricas de desarrollo pasadas, presentes y futuras, el estado de los contratos, la matriz de verificación en 4 capas (AC/DC) y la trazabilidad del código sin requerir lectura de texto plano línea por línea.</p>
             </div>
 
             <div class="pt-3 border-t border-sddBorder/60 space-y-2">
               <div class="flex items-center justify-between text-xs text-gray-400">
                 <span>Modo: <strong class="text-gray-200">STRICT</strong></span>
-                <span>BR: <strong class="text-gray-200">1</strong> | AC: <strong class="text-gray-200">1</strong></span>
+                <span>BR: <strong class="text-gray-200">6</strong> | AC: <strong class="text-gray-200">5</strong></span>
               </div>
               <div>
                 <div class="flex justify-between text-[10px] text-gray-400 mb-1">
                   <span>Progreso Completion Map</span>
-                  <span class="font-mono font-bold text-sddEmerald">0%</span>
+                  <span class="font-mono font-bold text-sddEmerald">100%</span>
                 </div>
                 <div class="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
-                  <div class="bg-gradient-to-r from-sddCyan to-sddEmerald h-1.5 rounded-full" style="width: 0%"></div>
+                  <div class="bg-gradient-to-r from-sddCyan to-sddEmerald h-1.5 rounded-full" style="width: 100%"></div>
                 </div>
               </div>
             </div>
@@ -511,109 +479,120 @@
     </div>
   </footer>
 
-  <!-- INITIALIZE ICONS & CHARTS -->
+  <!-- INITIALIZE ICONS & CHARTS (data injected from on-disk files only) -->
   <script>
+    const CHART_DATA = {"layers":[0,0,0,0],"toolLabels":[],"toolValues":[],"clientLabels":[],"clientValues":[],"contractsByStatus":[3,0,0]};
+    const chartOrEmpty = (id) => {
+      const canvas = document.getElementById(id);
+      return canvas ? canvas.getContext('2d') : null;
+    };
+
     lucide.createIcons();
 
-    // 1. Layer Verification Chart (Radar / Polar Area)
-    const ctxLayers = document.getElementById('layersChart').getContext('2d');
-    new Chart(ctxLayers, {
-      type: 'doughnut',
-      data: {
-        labels: ['Funcional (Tests)', 'Estático (Tipos/Lint)', 'Seguridad (SAST)', 'Arquitectura (Guard)'],
-        datasets: [{
-          data: [50, 20, 15, 15],
-          backgroundColor: ['#06B6D4', '#10B981', '#F59E0B', '#8B5CF6'],
-          borderColor: '#111827',
-          borderWidth: 3
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { position: 'bottom', labels: { color: '#9CA3AF', font: { size: 10 } } }
+    // 1. Layer Verification Chart — real per-layer success rates (zeros when no ledger yet)
+    const ctxLayers = chartOrEmpty('layersChart');
+    if (ctxLayers) {
+      new Chart(ctxLayers, {
+        type: 'doughnut',
+        data: {
+          labels: ['Funcional (Tests)', 'Estático (Tipos/Lint)', 'Seguridad (SAST)', 'Arquitectura (Guard)'],
+          datasets: [{
+            data: CHART_DATA.layers,
+            backgroundColor: ['#06B6D4', '#10B981', '#F59E0B', '#8B5CF6'],
+            borderColor: '#111827',
+            borderWidth: 3
+          }]
         },
-        cutout: '70%'
-      }
-    });
-
-    // 2. Evolution Chart
-    const ctxEvolution = document.getElementById('evolutionChart').getContext('2d');
-    new Chart(ctxEvolution, {
-      type: 'line',
-      data: {
-        labels: ['v0.1.0', 'v0.2.0', 'v0.3.0', 'v0.4.0 Live'],
-        datasets: [{
-          label: 'First-Pass Rate %',
-          data: [60, 72, 80, 88],
-          borderColor: '#10B981',
-          backgroundColor: 'rgba(16, 185, 129, 0.1)',
-          fill: true,
-          tension: 0.4,
-          pointBackgroundColor: '#10B981'
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          y: { min: 40, max: 100, grid: { color: '#1F2937' }, ticks: { color: '#9CA3AF' } },
-          x: { grid: { color: '#1F2937' }, ticks: { color: '#9CA3AF' } }
-        },
-        plugins: {
-          legend: { display: false }
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { color: '#9CA3AF', font: { size: 10 } } }
+          },
+          cutout: '70%'
         }
-      }
-    });
+      });
+    }
 
-    // 3. Platform Distribution Chart (Doughnut)
-    const ctxPlatforms = document.getElementById('platformsChart').getContext('2d');
-    new Chart(ctxPlatforms, {
-      type: 'doughnut',
-      data: {
-        labels: ['Cursor IDE', 'Claude Code', 'Antigravity CLI/IDE', 'Windsurf / VS Code'],
-        datasets: [{
-          data: [42, 31, 18, 9],
-          backgroundColor: ['#06B6D4', '#F59E0B', '#10B981', '#8B5CF6'],
-          borderColor: '#111827',
-          borderWidth: 2
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false }
+    // 2. Local usage by tool — real invocations from .sdd/usage.json
+    const ctxEvolution = chartOrEmpty('evolutionChart');
+    if (ctxEvolution) {
+      new Chart(ctxEvolution, {
+        type: 'bar',
+        data: {
+          labels: CHART_DATA.toolLabels,
+          datasets: [{
+            label: 'Invocaciones',
+            data: CHART_DATA.toolValues,
+            backgroundColor: '#10B981',
+            borderRadius: 4
+          }]
         },
-        cutout: '65%'
-      }
-    });
-
-    // 4. MCP Tools Traffic Chart (Bar)
-    const ctxTools = document.getElementById('toolsChart').getContext('2d');
-    new Chart(ctxTools, {
-      type: 'bar',
-      data: {
-        labels: ['step_loop', 'validate_gate', 'create_contract', 'get_metrics', 'audit'],
-        datasets: [{
-          data: [58, 32, 18, 12, 8],
-          backgroundColor: '#8B5CF6',
-          borderRadius: 4
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          y: { grid: { color: '#1F2937' }, ticks: { color: '#9CA3AF' } },
-          x: { grid: { display: false }, ticks: { color: '#9CA3AF', font: { size: 9 } } }
-        },
-        plugins: {
-          legend: { display: false }
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { beginAtZero: true, grid: { color: '#1F2937' }, ticks: { color: '#9CA3AF', precision: 0 } },
+            x: { grid: { display: false }, ticks: { color: '#9CA3AF', font: { size: 9 } } }
+          },
+          plugins: {
+            legend: { display: false }
+          }
         }
-      }
-    });
+      });
+    }
+
+    // 3. Declared clients Chart (Doughnut) — only when the ledger has clients
+    const ctxPlatforms = chartOrEmpty('platformsChart');
+    if (ctxPlatforms) {
+      new Chart(ctxPlatforms, {
+        type: 'doughnut',
+        data: {
+          labels: CHART_DATA.clientLabels,
+          datasets: [{
+            data: CHART_DATA.clientValues,
+            backgroundColor: ['#06B6D4', '#F59E0B', '#10B981', '#8B5CF6', '#EF4444'],
+            borderColor: '#111827',
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          cutout: '65%'
+        }
+      });
+    }
+
+    // 4. MCP Tools Traffic Chart (Bar) — same real usage ledger
+    const ctxTools = chartOrEmpty('toolsChart');
+    if (ctxTools) {
+      new Chart(ctxTools, {
+        type: 'bar',
+        data: {
+          labels: CHART_DATA.toolLabels,
+          datasets: [{
+            data: CHART_DATA.toolValues,
+            backgroundColor: '#8B5CF6',
+            borderRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { beginAtZero: true, grid: { color: '#1F2937' }, ticks: { color: '#9CA3AF', precision: 0 } },
+            x: { grid: { display: false }, ticks: { color: '#9CA3AF', font: { size: 9 } } }
+          },
+          plugins: {
+            legend: { display: false }
+          }
+        }
+      });
+    }
   </script>
 </body>
 </html>

@@ -31,14 +31,12 @@
     {
       "name": "sdd-gate",
       "description": "Gate protocol — human-controlled spec refinement and consistency validation",
-      "file": ".agents/skills/sdd-gate/SKILL.md",
-      "also_as_command": ".claude/commands/sdd-gate.md"
+      "file": ".agents/skills/sdd-gate/SKILL.md"
     },
     {
       "name": "sdd-loop",
       "description": "Loop protocol — autonomous execution with persistence and crash recovery",
-      "file": ".agents/skills/sdd-loop/SKILL.md",
-      "also_as_command": ".claude/commands/sdd-loop.md"
+      "file": ".agents/skills/sdd-loop/SKILL.md"
     },
     {
       "name": "sdd-feature",
@@ -57,6 +55,34 @@
       "description": "Show dashboard of all Contracts grouped by Status",
       "file": ".agents/skills/sdd-status/SKILL.md",
       "also_as_command": ".claude/commands/sdd-status.md"
+    },
+    {
+      "name": "sdd-metrics",
+      "description": "Displays engineering quality and DORA-style metrics: First-Pass Quality Rate (FPQR), average retries per contract, layer success rates, and ambiguity escalation rates",
+      "file": ".agents/skills/sdd-metrics/SKILL.md",
+      "also_as_command": ".claude/commands/sdd-metrics.md"
+    },
+    {
+      "name": "sdd-audit",
+      "description": "Audits traceability between specification contracts and project codebase. Detects orphan specs (BR/AC without matching tests) and code without spec (domain logic without contracts)",
+      "file": ".agents/skills/sdd-audit/SKILL.md",
+      "also_as_command": ".claude/commands/sdd-audit.md"
+    },
+    {
+      "name": "sdd-dashboard",
+      "description": "Generates and updates the standalone Living Visual Dashboard (docs/index.html) with real-time First-Pass Quality metrics, multi-layer verification matrix, timeline, and interactive contract explorer",
+      "file": ".agents/skills/sdd-dashboard/SKILL.md",
+      "also_as_command": ".claude/commands/sdd-dashboard.md"
+    },
+    {
+      "name": "sdd-solve-agent",
+      "description": "Specialized repair agent for fast, localized fixes (lint errors, syntax issues, missing imports, minor type narrowing, off-by-one test assertions). Operates within the Loop with a 3-retry limit. Strictly prohibited from making architectural or business logic design decisions",
+      "file": ".agents/skills/sdd-solve-agent/SKILL.md"
+    },
+    {
+      "name": "sdd-verifier-agent",
+      "description": "Specialized QA & Quality verification agent responsible for executing non-functional layers: static analysis, type checking, security scanning, and architectural boundary compliance against CONSTITUTION.md",
+      "file": ".agents/skills/sdd-verifier-agent/SKILL.md"
     }
   ],
 
@@ -84,6 +110,18 @@
       "file": ".agents/skills/sdd-tester-agent/SKILL.md",
       "also_as_agent": ".claude/agents/tester-agent.md",
       "operates_in": "LOOP"
+    },
+    {
+      "name": "sdd-solve-agent",
+      "file": ".agents/skills/sdd-solve-agent/SKILL.md",
+      "also_as_agent": ".claude/agents/solve-agent.md",
+      "operates_in": "LOOP"
+    },
+    {
+      "name": "sdd-verifier-agent",
+      "file": ".agents/skills/sdd-verifier-agent/SKILL.md",
+      "also_as_agent": ".claude/agents/verifier-agent.md",
+      "operates_in": "LOOP"
     }
   ],
 
@@ -97,6 +135,7 @@
   "structure": {
     "contracts_dir": "contracts/",
     "protocol_dir": "protocol/",
-    "stack_file": "stack.md"
+    "stack_file": "stack.md",
+    "metrics_file": ".sdd/metrics.json"
   }
 }

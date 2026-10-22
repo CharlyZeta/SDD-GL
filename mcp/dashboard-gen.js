@@ -18,15 +18,28 @@ function getProjectRoot(customRoot) {
   return path.resolve(__dirname, '..');
 }
 
-function generateDashboard(customRoot) {
+function generateDashboard(customRoot, options = {}) {
   const PROJECT_ROOT = getProjectRoot(customRoot);
-  const CONTRACTS_DIR = path.join(PROJECT_ROOT, 'contracts');
+
+  // Public showcase mode (FEAT-0012 policy): render only the curated examples and
+  // never read the private working state (contracts/, .sdd/).
+  const publicShowcase = options.publicShowcase === true;
+
+  const CONTRACTS_DIR = publicShowcase
+    ? path.join(PROJECT_ROOT, 'examples', 'contracts')
+    : path.join(PROJECT_ROOT, 'contracts');
   const DOCS_DIR = path.join(PROJECT_ROOT, 'docs');
+  const OUTPUT_FILE = publicShowcase
+    ? path.join(DOCS_DIR, 'index.html')
+    : path.join(PROJECT_ROOT, '.sdd', 'dashboard.html');
   const METRICS_FILE = path.join(PROJECT_ROOT, '.sdd', 'metrics.json');
   const RUNS_DIR = path.join(PROJECT_ROOT, '.sdd', 'runs');
 
   if (!fs.existsSync(DOCS_DIR)) {
     fs.mkdirSync(DOCS_DIR, { recursive: true });
+  }
+  if (!fs.existsSync(path.dirname(OUTPUT_FILE))) {
+    fs.mkdirSync(path.dirname(OUTPUT_FILE), { recursive: true });
   }
 
   // 1. Gather all contracts
@@ -101,9 +114,11 @@ function generateDashboard(customRoot) {
     first_seen: null,
     last_updated: null
   };
-  let usageSource = 'sin datos (no .sdd/usage.json)';
+  let usageSource = publicShowcase
+    ? 'sin datos (dashboard público del showcase)'
+    : 'sin datos (no .sdd/usage.json)';
 
-  if (fs.existsSync(USAGE_FILE)) {
+  if (!publicShowcase && fs.existsSync(USAGE_FILE)) {
     try {
       const parsedUsage = JSON.parse(fs.readFileSync(USAGE_FILE, 'utf8'));
       if (parsedUsage && parsedUsage.schema_version === 1) {
@@ -127,8 +142,10 @@ function generateDashboard(customRoot) {
   const hasUsage = usageSource === '.sdd/usage.json' && usage.totals.calls > 0;
 
   // FEAT-0016: `.sdd/metrics.json` is the single source of truth for quality metrics.
-  let metricsSource = 'sin datos (no .sdd/metrics.json)';
-  if (fs.existsSync(METRICS_FILE)) {
+  let metricsSource = publicShowcase
+    ? 'sin datos (dashboard público del showcase)'
+    : 'sin datos (no .sdd/metrics.json)';
+  if (!publicShowcase && fs.existsSync(METRICS_FILE)) {
     try {
       const ledger = JSON.parse(fs.readFileSync(METRICS_FILE, 'utf8'));
       if (ledger && ledger.schema_version === 1) {
@@ -450,7 +467,7 @@ function generateDashboard(customRoot) {
       </div>
     </section>
 
-    <!-- LOCAL MCP USAGE (FEAT-0008: 100% local, no global aggregation) -->
+    <!-- LOCAL MCP USAGE: 100% local, no global aggregation -->
     <section class="glass-card p-6 rounded-xl space-y-6">
       <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
@@ -733,12 +750,13 @@ function generateDashboard(customRoot) {
 </html>
 `;
 
-  const outputPath = path.join(DOCS_DIR, 'index.html');
+  const outputPath = OUTPUT_FILE;
   fs.writeFileSync(outputPath, htmlContent, 'utf8');
   console.log(`✅ [Dashboard Generator] Dashboard generado exitosamente en: ${outputPath}`);
   return {
     success: true,
     path: outputPath,
+    scope: publicShowcase ? 'public-showcase' : 'local',
     total_contracts: contracts.length,
     resolved_count: resolvedCount,
     last_updated: lastUpdated,
@@ -749,7 +767,8 @@ function generateDashboard(customRoot) {
 }
 
 if (require.main === module) {
-  generateDashboard();
+  const asPublic = process.argv.includes('--public') || process.env.SDD_DASHBOARD_SCOPE === 'public';
+  generateDashboard(undefined, { publicShowcase: asPublic });
 }
 
 module.exports = { generateDashboard };

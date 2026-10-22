@@ -148,6 +148,20 @@ COMPLETION MAP: FEAT-0001
 
 ---
 
+### Interoperability with External Behavioral Skills
+
+Global behavioral skills (style guides, "ask before acting" profiles, brevity mandates) often conflict with an autonomous Loop. SDD-GL resolves this with an additive `protocol/interop.md` layer:
+
+* **Precedence**: the SDD-GL protocol always wins over an external behavioral skill. A skill cannot skip the Contract, the Completion Map, the Glass Box audit, or the metrics.
+* **"Ask" routing**: an inline question during the Loop becomes an Ambiguity Log entry + `Mode: GATE` / `Status: DRAFT` + stop. No direct question is ever asked mid-Loop.
+* **Traceability anchor**: with an `APPROVED` contract, every modified line traces back to the Contract, not to the raw user request or a skill's interpretation.
+* **No trimming**: the framework ceremonial is part of the task; simplification proposals are recorded as notes for human decision.
+* **Closing subordination**: a skill's "what I skipped" summary is subordinate to the official `COMPLETION REPORT`.
+
+Without active behavioral skills, Interop Mode is a no-op: behavior is identical to the plain Gate/Loop cycle.
+
+---
+
 ## Core Benefits & Technological Advantages
 
 SDD-GL is engineered to bridge the gap between rapid AI code generation and strict software engineering rigor. Here is why the SDD-GL architecture delivers superior reliability for solo developers and teams:
@@ -215,20 +229,35 @@ Traditional AI assistants only check if code compiles or basic tests pass. SDD-G
 
 ---
 
-## Living Visual Dashboard & Public Telemetry
+## Living Visual Dashboard & Local Usage Metrics
 
-SDD-GL includes an interactive, publication-ready **Living Visual Dashboard** hosted live on GitHub Pages:
+SDD-GL includes an interactive, publication-ready **Living Visual Dashboard**. Each user generates their own copy from their own machine:
 
-👉 **[View Live Dashboard on GitHub Pages](https://charlyzeta.github.io/SDD-GL/)**
+👉 **[View the maintainer's dashboard on GitHub Pages](https://charlyzeta.github.io/SDD-GL/)**
 
 ![Living Dashboard Preview](assets/sdd-gl-cover.png)
 
 ### Key Dashboard Capabilities
-* 📊 **First-Pass Quality Rate (FPQR)** & Test Completion Gauges updated with every cycle.
-* 🛡️ **4-Layer Verification Heatmaps** (Functional, Static Analysis, Security SAST, Architecture Guard).
-* 🌐 **Multi-Platform Ecosystem Telemetry**: Visual breakdown of MCP requests across Cursor, Windsurf, Claude Code, Antigravity, VS Code, and Zed.
-* 📋 **Feature vs. Bugfix Throughput**: Tracks resolution speed and retry statistics across active contracts.
-* 🔒 **Privacy-by-Design & Zero-PII**: All public telemetry is completely sanitized and aggregated. No usernames, email addresses, repository tokens, or absolute local filesystem paths (`C:\...`) are ever stored or published.
+* 📊 **First-Pass Quality Rate (FPQR)** & layer gauges, computed from `.sdd/metrics.json`; they read "sin datos" until real telemetry exists.
+* 🛡️ **4-Layer Verification Matrix** (Functional, Static Analysis, Security SAST, Architecture Guard).
+* 🌐 **Local MCP Usage Telemetry**: real tool invocations, sessions and declared clients (`clientInfo`) from `.sdd/usage.json`.
+* 📋 **Feature vs. Bugfix Throughput** and gate-mode distribution, computed from the contracts on disk.
+* 🔒 **Privacy-by-Design & Zero-PII**: the usage ledger stores counters, tool names, declared client/version and dates only — never arguments, prompts, file paths, usernames or tokens.
+* 🌍 **Publishable, not global**: the generated HTML carries the data inline and uses no network fetch, so you can publish it as *your own* methodology usage metric. There is no central aggregation.
+
+> [!NOTE]
+> There is no global/ecosystem-wide telemetry. A local stdio MCP server cannot see other machines, so any "global" figure would be fabricated. Measuring adoption across users would require an opt-in remote endpoint, which is out of scope for now.
+
+### Generating it
+
+```bash
+npm run dashboard         # local dashboard -> .sdd/dashboard.html (private; publish it yourself if you want)
+npm run dashboard:public  # public showcase -> docs/index.html (reads only examples/contracts/)
+```
+
+The local dashboard never lands in `docs/`, so working contracts and telemetry cannot leak into the published page by accident.
+
+
 
 ---
 

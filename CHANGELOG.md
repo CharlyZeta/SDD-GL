@@ -69,3 +69,17 @@
 - **Executable MCP Server (`@sdd-gl/mcp-server`)**: Standard Node.js JSON-RPC stdio server in `mcp/server.js` implementing tools for contracts, gate validation, loop execution, metrics, and audits.
 - **Project Constitution (`CONSTITUTION.md`)**: Optional high-level architectural rules and security guardrails respected by all agents in the Loop.
 
+## [0.5.0] — 2026-10-20
+
+### Added — Interop Mode, Inferred Assumptions, deterministic ledger, honest metrics & CI
+
+- **Behavioral Skills Interop (`protocol/interop.md`)**: Additive protocol that resolves conflicts between the Gate/Loop state machine and global behavioral skills. Declares protocol precedence, routes every "ask" through the Ambiguity Log instead of inline questions, anchors each modified line to the approved Contract, forbids trimming the framework ceremonial, and subordinates a skill's "what I skipped" closing to the official `COMPLETION REPORT`. Without active behavioral skills it is a no-op. Wired into the startup sequence and per-agent context of `CLAUDE.md` and `AGENTS.md`.
+- **Inferred Assumptions (`## Inferred Assumptions`)**: Optional, non-normative contract section (`AS-XX`) where the requirements agent records every inference it made, with the impact if it is wrong. Open items block approval; confirmed or refuted items stay as an audit trail. Assumptions never generate Completion Map criteria.
+- **Deterministic Loop ledger (`sdd_step_loop`)**: The tool now builds and persists the Completion Map from the inference table when missing, claims an item (persists `⏳` and returns its context) and records the agent-reported outcome (`result` + `evidence`). State is persisted before and after every item; the server no longer fabricates `PASS`.
+- **Quality metrics ledger (`.sdd/metrics.json`)**: Single source of truth for FPQR, average retries, per-layer success rates and ambiguity escalation rate. Written atomically after each Loop step; `sdd_get_metrics` returns real values (explicit zeroed defaults only when the file is absent) and the dashboard consumes the ledger.
+- **Gate validator & traceability audit**: `sdd_validate_gate` enforces the structural checklist per contract type and detects BR↔AC contradictions; `sdd_audit_traceability` computes real coverage and lists genuine orphan specs instead of fixed numbers.
+- **GitHub Actions CI (`.github/workflows/test.yml`)**: Runs the full suite on push and PR, verifies the MCP server exposes exactly 8 tools and answers over stdio JSON-RPC, and fails if the tracked tree is dirty. Reproducible on a clean clone without the private `contracts/` or `.sdd/` state.
+- **Local MCP usage telemetry (`.sdd/usage.json`)**: Every tool invocation is counted locally (tool name, success/error, sessions, declared `clientInfo`), with atomic writes and no network calls. The dashboard renders this as "Uso local del MCP" and says "sin datos" when the ledger is empty. The generated HTML carries the data inline, so any user can publish it as their own methodology usage metric. There is no global aggregation by design, and every previously fabricated figure (requests, platform split, solve rate, historical quality curve) was removed.
+
+
+

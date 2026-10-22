@@ -149,6 +149,20 @@ COMPLETION MAP: FEAT-0001
 
 ---
 
+### Interoperabilidad con Skills de Comportamiento Externas
+
+Las skills globales de comportamiento (guías de estilo, perfiles "preguntá antes de actuar", mandatos de brevedad) suelen chocar con un Loop autónomo. SDD-GL lo resuelve con una capa aditiva `protocol/interop.md`:
+
+* **Precedencia**: el protocolo SDD-GL siempre gana sobre una skill de comportamiento externa. Una skill no puede saltarse el Contract, el Completion Map, el registro Glass Box ni las métricas.
+* **Enrutado de "preguntar"**: una pregunta inline durante el Loop se convierte en entrada de Ambiguity Log + `Mode: GATE` / `Status: DRAFT` + detención. Nunca se pregunta directo en medio del Loop.
+* **Ancla de trazabilidad**: con un Contract en `APPROVED`, cada línea modificada se traza al Contract, no al pedido crudo ni a la interpretación de la skill.
+* **Sin recortes**: el ceremonial del framework es parte de la tarea; las propuestas de simplificación quedan como notas para decisión humana.
+* **Subordinación del cierre**: el resumen "qué omití" de una skill se subordina al `COMPLETION REPORT` oficial.
+
+Sin skills de comportamiento activas, el Modo Interop es no-op: el comportamiento es idéntico al ciclo Gate/Loop normal.
+
+---
+
 ## Beneficios Clave y Ventajas Tecnológicas
 
 SDD-GL está diseñado para cerrar la brecha entre la velocidad de generación de código con IA y el rigor técnico de la ingeniería de software profesional. La arquitectura de SDD-GL brinda confiabilidad superior tanto para desarrolladores independientes como para equipos:
@@ -216,20 +230,35 @@ Los asistentes de IA tradicionales solo comprueban si el código compila o pasan
 
 ---
 
-## Dashboard Visual Vivo y Telemetría Pública
+## Dashboard Visual Vivo y Métricas Locales de Uso
 
-SDD-GL incluye un **Dashboard Visual Vivo** e interactivo alojado de forma pública en GitHub Pages:
+SDD-GL incluye un **Dashboard Visual Vivo** interactivo y publicable. Cada usuario genera su propia copia desde su máquina:
 
-👉 **[Ver Dashboard en Vivo en GitHub Pages](https://charlyzeta.github.io/SDD-GL/)**
+👉 **[Ver el dashboard del mantenedor en GitHub Pages](https://charlyzeta.github.io/SDD-GL/)**
 
 ![Vista Previa del Dashboard](assets/sdd-gl-cover.png)
 
 ### Capacidades Destacadas del Dashboard
-* 📊 **Tasa de Calidad en Primer Pase (FPQR)** e Indicadores de Finalización de Pruebas actualizados con cada ciclo.
-* 🛡️ **Mapas de Calor de Verificación en 4 Capas** (Funcional, Análisis Estático, Seguridad SAST, Guardián Arquitectónico).
-* 🌐 **Telemetría del Ecosistema Multiplataforma**: Desglose visual de peticiones MCP distribuidas en Cursor, Windsurf, Claude Code, Antigravity, VS Code y Zed.
-* 📋 **Rendimiento de Features vs. Correcciones de Bugs**: Seguimiento de velocidad de resolución y estadísticas de reintentos en contratos activos.
-* 🔒 **Privacidad por Diseño y Cero PII**: Toda la telemetría pública está completamente sanitizada y agregada. Nunca se almacenan ni publican nombres de usuario, correos electrónicos, tokens ni rutas absolutas del sistema de archivos local (`C:\...`).
+* 📊 **Tasa de Calidad en Primer Pase (FPQR)** e indicadores por capa, calculados desde `.sdd/metrics.json`; muestran "sin datos" hasta que exista telemetría real.
+* 🛡️ **Matriz de Verificación en 4 Capas** (Funcional, Análisis Estático, Seguridad SAST, Guardián Arquitectónico).
+* 🌐 **Telemetría local de uso del MCP**: invocaciones reales por herramienta, sesiones y clientes declarados (`clientInfo`) desde `.sdd/usage.json`.
+* 📋 **Rendimiento de Features vs. Correcciones** y distribución de modos de gobernanza, calculados desde los contratos en disco.
+* 🔒 **Privacidad por Diseño y Cero PII**: el ledger de uso guarda solo contadores, nombres de tool, cliente/versión declarados y fechas — nunca argumentos, prompts, rutas, usuarios ni tokens.
+* 🌍 **Publicable, no global**: el HTML generado lleva los datos embebidos y no hace llamadas de red, así que podés publicarlo como *tu propia* métrica de uso de la metodología. No existe agregación central.
+
+> [!NOTE]
+> No hay telemetría global del ecosistema. Un servidor MCP stdio local no puede ver otras máquinas, así que cualquier cifra "global" sería inventada. Medir adopción entre usuarios requeriría un endpoint remoto opt-in, fuera de alcance por ahora.
+
+### Cómo generarlo
+
+```bash
+npm run dashboard         # dashboard local -> .sdd/dashboard.html (privado; publicalo vos si querés)
+npm run dashboard:public  # showcase público -> docs/index.html (lee solo examples/contracts/)
+```
+
+El dashboard local nunca se escribe en `docs/`, así los contratos de trabajo y la telemetría no pueden filtrarse a la página publicada por accidente.
+
+
 
 ---
 

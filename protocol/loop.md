@@ -20,6 +20,10 @@ o detecta una ambigüedad que requiere intervención humana.
 
 Al arrancar, el Loop lee el Contract y construye el Completion Map.
 **Si ya existe un Completion Map en el Contract, lo usa tal cual — no lo reconstruye.**
+Los supuestos inferidos (## Inferred Assumptions) son no-normativos (BR-004): no aparecen
+ni se infieren en el Completion Map. El mapa se construye únicamente de Main Flow, AF-XX,
+BR-XXX y AC-XXX. La ambigüedad derivada de supuestos confirmados o inferencias no registradas
+se trata según esta sección (loop.md) y la resolución se registra en ## Inferred Assumptions.
 
 Mapeo de inferencia:
 
