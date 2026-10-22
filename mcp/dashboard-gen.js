@@ -82,54 +82,105 @@ function generateDashboard(customRoot) {
     });
   }
 
-  // 2. Metrics & Quality statistics (Aggregated & Privacy-Safe)
+  // 2. Quality metrics — only values that exist on disk (FEAT-0008: no fabricated numbers).
   let metrics = {
-    total_contracts: contracts.length,
-    first_pass_rate_feat: 85.0,
-    first_pass_rate_fix: 100.0,
-    overall_first_pass_rate: 88.0,
-    avg_retries: 0.3,
-    ambiguity_escalation_rate: 12.0,
-    layer_pass_rates: { functional: 95.0, static: 98.0, security: 100.0, arch: 100.0 },
-    total_active_tests: 21,
-    tests_passing: 21,
-    // Multi-platform & Usage Telemetry (Anonymized - Cero PII)
-    mcp_usage_telemetry: {
-      total_tool_requests: 128,
-      platform_distribution: {
-        'Cursor IDE': 42,
-        'Claude Code': 31,
-        'Antigravity CLI/IDE': 18,
-        'Windsurf / VS Code': 9
-      },
-      workload_types: {
-        'Features (FEAT)': contracts.filter(c => c.id.startsWith('FEAT')).length || 4,
-        'Bugfixes (FIX)': contracts.filter(c => c.id.startsWith('FIX')).length || 1
-      },
-      gate_modes: {
-        'GATE-STRICT (Domain Logic)': contracts.filter(c => c.gateMode === 'STRICT').length || 4,
-        'GATE-EXPRESS (Zero Fatigue)': contracts.filter(c => c.gateMode === 'EXPRESS').length || 1
-      },
-      tool_requests: {
-        'sdd_step_loop': 58,
-        'sdd_validate_gate': 32,
-        'sdd_create_contract': 18,
-        'sdd_get_metrics': 12,
-        'sdd_audit_traceability': 8
-      }
-    }
+    first_pass_quality_rate: null,
+    average_retries: null,
+    ambiguity_escalation_rate: null,
+    layer_success_rates: { functional: null, static: null, security: null, arch: null },
+    last_updated: null
   };
 
+  // 2b. Local usage telemetry (FEAT-0008). 100% local: no network, no global aggregation.
+  const USAGE_FILE = path.join(PROJECT_ROOT, '.sdd', 'usage.json');
+  let usage = {
+    totals: { calls: 0, errors: 0 },
+    tools: {},
+    clients: {},
+    sessions: 0,
+    first_seen: null,
+    last_updated: null
+  };
+  let usageSource = 'sin datos (no .sdd/usage.json)';
+
+  if (fs.existsSync(USAGE_FILE)) {
+    try {
+      const parsedUsage = JSON.parse(fs.readFileSync(USAGE_FILE, 'utf8'));
+      if (parsedUsage && parsedUsage.schema_version === 1) {
+        usage = {
+          totals: { calls: 0, errors: 0, ...(parsedUsage.totals || {}) },
+          tools: { ...(parsedUsage.tools || {}) },
+          clients: { ...(parsedUsage.clients || {}) },
+          sessions: parsedUsage.sessions || 0,
+          first_seen: parsedUsage.first_seen || null,
+          last_updated: parsedUsage.last_updated || null
+        };
+        usageSource = '.sdd/usage.json';
+      } else {
+        usageSource = 'sin datos (usage.json con esquema distinto)';
+      }
+    } catch (error) {
+      usageSource = `sin datos (usage.json ilegible: ${error.message})`;
+    }
+  }
+
+  const hasUsage = usageSource === '.sdd/usage.json' && usage.totals.calls > 0;
+
+  // FEAT-0016: `.sdd/metrics.json` is the single source of truth for quality metrics.
+  let metricsSource = 'sin datos (no .sdd/metrics.json)';
   if (fs.existsSync(METRICS_FILE)) {
     try {
-      const fileMetrics = JSON.parse(fs.readFileSync(METRICS_FILE, 'utf8'));
-      metrics = { ...metrics, ...fileMetrics };
-    } catch (e) {}
+      const ledger = JSON.parse(fs.readFileSync(METRICS_FILE, 'utf8'));
+      if (ledger && ledger.schema_version === 1) {
+        metricsSource = '.sdd/metrics.json';
+        metrics.first_pass_quality_rate = ledger.first_pass_quality_rate;
+        metrics.average_retries = ledger.average_retries;
+        metrics.ambiguity_escalation_rate = ledger.ambiguity_escalation_rate;
+        metrics.layer_success_rates = ledger.layer_success_rates || metrics.layer_success_rates;
+        metrics.last_updated = ledger.last_updated;
+      } else {
+        metricsSource = 'sin datos (ledger con esquema distinto)';
+      }
+    } catch (error) {
+      metricsSource = `sin datos (ledger ilegible: ${error.message})`;
+    }
   }
+
+  // With no recorded telemetry the panel must say "sin datos" instead of 0% (no invented numbers).
+  const metricsHasData = metricsSource === '.sdd/metrics.json' && Boolean(metrics.last_updated);
 
   const resolvedCount = contracts.filter(c => c.status === 'RESOLVED').length;
   const inProgressCount = contracts.filter(c => c.status === 'APPROVED').length;
   const draftCount = contracts.filter(c => c.status === 'DRAFT').length;
+
+  // Derived from real on-disk contracts (not constants).
+  const featCount = contracts.filter(c => c.id.startsWith('FEAT')).length;
+  const fixCount = contracts.filter(c => c.id.startsWith('FIX')).length;
+  const strictCount = contracts.filter(c => c.gateMode === 'STRICT').length;
+  const expressCount = contracts.filter(c => c.gateMode === 'EXPRESS').length;
+  const share = (part, total) => (total > 0 ? Math.round((part / total) * 100) : 0);
+
+  let toolCount = null;
+  try {
+    toolCount = require('./server.js').TOOLS.length;
+  } catch (error) {
+    toolCount = null; // reported as "sin datos" below instead of a hardcoded number
+  }
+
+  const toolEntries = Object.entries(usage.tools).sort((a, b) => b[1] - a[1]);
+  const clientEntries = Object.entries(usage.clients).sort((a, b) => b[1] - a[1]);
+  const layerEntries = Object.entries(metrics.layer_success_rates);
+  const formatRate = value => (value === null || value === undefined ? '—' : `${value}%`);
+
+  // Chart payloads are built from on-disk data only; empty arrays render as "sin datos".
+  const chartData = {
+    layers: layerEntries.map(([, value]) => (value === null || value === undefined ? 0 : value)),
+    toolLabels: toolEntries.map(([name]) => name),
+    toolValues: toolEntries.map(([, count]) => count),
+    clientLabels: clientEntries.map(([name]) => name),
+    clientValues: clientEntries.map(([, count]) => count),
+    contractsByStatus: [resolvedCount, inProgressCount, draftCount]
+  };
 
   const lastUpdated = new Date().toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
 
@@ -213,9 +264,9 @@ function generateDashboard(customRoot) {
           <span class="text-xs font-semibold uppercase tracking-wider">First-Pass Quality (FPQR)</span>
           <i data-lucide="target" class="w-5 h-5 text-sddCyan"></i>
         </div>
-        <div class="text-3xl font-extrabold text-white neon-text-cyan">${metrics.overall_first_pass_rate}%</div>
+        <div class="text-3xl font-extrabold text-white neon-text-cyan">${metricsHasData ? `${metrics.first_pass_quality_rate}%` : 'sin datos'}</div>
         <p class="text-xs text-gray-400 mt-2 flex items-center">
-          <span class="text-sddEmerald font-medium mr-1">↑ 85% FEAT</span> · 100% Bugfixes
+          <span class="text-sddEmerald font-medium mr-1">Fuente:</span> ${metricsSource}
         </p>
       </div>
 
@@ -225,9 +276,9 @@ function generateDashboard(customRoot) {
           <span class="text-xs font-semibold uppercase tracking-wider">Pruebas en las 4 Capas</span>
           <i data-lucide="shield-check" class="w-5 h-5 text-sddEmerald"></i>
         </div>
-        <div class="text-3xl font-extrabold text-white neon-text-emerald">${metrics.tests_passing}/${metrics.total_active_tests} ✅</div>
+        <div class="text-3xl font-extrabold text-white neon-text-emerald">${metricsHasData ? layerEntries.map(([, value]) => formatRate(value)).join(' · ') : 'sin datos'}</div>
         <p class="text-xs text-gray-400 mt-2">
-          100% Funcional, Tipos, Seguridad y Arq.
+          ${metricsHasData ? 'Funcional · Estático · Seguridad · Arquitectura' : 'El ledger de calidad todavía no registró pasos.'}
         </p>
       </div>
 
@@ -237,9 +288,9 @@ function generateDashboard(customRoot) {
           <span class="text-xs font-semibold uppercase tracking-wider">Tasa de Autorreparación (Solve)</span>
           <i data-lucide="wrench" class="w-5 h-5 text-sddAmber"></i>
         </div>
-        <div class="text-3xl font-extrabold text-white">≤ 3 reintentos</div>
+        <div class="text-3xl font-extrabold text-white">${metricsHasData ? metrics.average_retries : 'sin datos'}</div>
         <p class="text-xs text-gray-400 mt-2">
-          Promedio de reintentos por contract: <span class="text-sddAmber font-mono">${metrics.avg_retries}</span>
+          Promedio de reintentos por contract${metricsHasData ? '' : ' (sin telemetría registrada)'}
         </p>
       </div>
 
@@ -268,23 +319,23 @@ function generateDashboard(customRoot) {
           <canvas id="layersChart"></canvas>
         </div>
         <div class="grid grid-cols-2 gap-2 mt-4 text-xs text-gray-400 pt-3 border-t border-sddBorder">
-          <div>🧪 Funcional: <span class="text-white font-mono font-bold">100%</span></div>
-          <div>🔍 Estático/Tipos: <span class="text-white font-mono font-bold">100%</span></div>
-          <div>🛡️ Seguridad SAST: <span class="text-white font-mono font-bold">100%</span></div>
-          <div>🏛️ Arquitectura: <span class="text-white font-mono font-bold">100%</span></div>
+          <div>🧪 Funcional: <span class="text-white font-mono font-bold">${formatRate(metrics.layer_success_rates.functional)}</span></div>
+          <div>🔍 Estático/Tipos: <span class="text-white font-mono font-bold">${formatRate(metrics.layer_success_rates.static)}</span></div>
+          <div>🛡️ Seguridad SAST: <span class="text-white font-mono font-bold">${formatRate(metrics.layer_success_rates.security)}</span></div>
+          <div>🏛️ Arquitectura: <span class="text-white font-mono font-bold">${formatRate(metrics.layer_success_rates.arch)}</span></div>
         </div>
       </div>
 
-      <!-- CHART: VERSION PROGRESSION & FIRST PASS RATE -->
+      <!-- CHART: LOCAL USAGE BY TOOL -->
       <div class="glass-card p-6 rounded-xl flex flex-col">
         <h3 class="text-sm font-semibold uppercase text-gray-300 mb-4 flex items-center gap-2">
-          <i data-lucide="trending-up" class="w-4 h-4 text-sddEmerald"></i> Evolución de Calidad Histórica
+          <i data-lucide="trending-up" class="w-4 h-4 text-sddEmerald"></i> Uso local: invocaciones por herramienta
         </h3>
         <div class="flex-1 flex items-center justify-center min-h-[200px]">
-          <canvas id="evolutionChart"></canvas>
+          ${hasUsage ? '<canvas id="evolutionChart"></canvas>' : '<p class="text-xs text-gray-500 text-center">sin datos</p>'}
         </div>
         <div class="text-xs text-gray-400 mt-4 pt-3 border-t border-sddBorder text-center">
-          First-Pass Rate histórico vs. Reducción de retrabajo humano
+          ${hasUsage ? `${usage.totals.calls} invocaciones · ${usage.sessions} sesiones · fuente ${usageSource}` : usageSource}
         </div>
       </div>
 
@@ -295,7 +346,7 @@ function generateDashboard(customRoot) {
             <i data-lucide="cpu" class="w-4 h-4 text-sddAmber"></i> Ecosistema Universal MCP
           </h3>
           <p class="text-xs text-gray-400 mb-4">
-            El servidor JSON-RPC stdio expone 7 herramientas universales consumidas por Cursor, Windsurf, Claude Code, Antigravity y VS Code.
+            El servidor JSON-RPC stdio expone ${toolCount === null ? 'un número no disponible (sin datos)' : `${toolCount} herramientas`} universales, consumidas por cualquier cliente MCP.
           </p>
           <div class="space-y-2 text-xs font-mono">
             <div class="flex items-center justify-between p-2 rounded bg-black/40 border border-sddBorder">
@@ -399,39 +450,38 @@ function generateDashboard(customRoot) {
       </div>
     </section>
 
-    <!-- NEW: ANONYMIZED MCP USAGE & PLATFORM TELEMETRY -->
+    <!-- LOCAL MCP USAGE (FEAT-0008: 100% local, no global aggregation) -->
     <section class="glass-card p-6 rounded-xl space-y-6">
       <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h3 class="text-base font-bold text-white flex items-center gap-2">
-            <i data-lucide="activity" class="w-5 h-5 text-sddCyan"></i> Telemetría Global del Ecosistema MCP
+            <i data-lucide="activity" class="w-5 h-5 text-sddCyan"></i> Uso local del MCP (esta máquina)
           </h3>
-          <p class="text-xs text-gray-400">Analítica agregada de plataformas de IA, volumen de requests y patrones de desarrollo (100% anónimo · Cero PII)</p>
+          <p class="text-xs text-gray-400">Invocaciones reales registradas en <code>.sdd/usage.json</code>. Sin agregación global ni llamadas de red: este HTML es tuyo y podés publicarlo como métrica de uso de la metodología.</p>
         </div>
         <div class="flex items-center gap-2 text-[10px] text-gray-400 bg-black/40 px-3 py-1.5 rounded border border-sddBorder">
-          <span class="w-2 h-2 rounded-full bg-sddEmerald"></span>
-          <span>Privacidad Garantizada: Cero Rutas Locales ni Identificadores de Usuario</span>
+          <span class="w-2 h-2 rounded-full ${hasUsage ? 'bg-sddEmerald' : 'bg-gray-600'}"></span>
+          <span>Fuente: ${usageSource}</span>
         </div>
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        <!-- CHART: PLATFORM DISTRIBUTION -->
+        <!-- CHART: DECLARED CLIENTS -->
         <div class="p-4 rounded-lg bg-black/30 border border-sddBorder flex flex-col justify-between">
           <div class="flex items-center justify-between mb-3">
             <h4 class="text-xs font-bold uppercase text-gray-300 flex items-center gap-1.5">
-              <i data-lucide="bot" class="w-4 h-4 text-sddCyan"></i> Plataformas / IDEs Conectados
+              <i data-lucide="bot" class="w-4 h-4 text-sddCyan"></i> Clientes declarados
             </h4>
-            <span class="text-[10px] font-mono text-sddCyan">128+ Requests</span>
+            <span class="text-[10px] font-mono text-sddCyan">${hasUsage ? `${usage.totals.calls} llamadas` : 'sin datos'}</span>
           </div>
           <div class="min-h-[180px] flex items-center justify-center">
-            <canvas id="platformsChart"></canvas>
+            ${clientEntries.length > 0 ? '<canvas id="platformsChart"></canvas>' : '<p class="text-xs text-gray-500 text-center">sin datos</p>'}
           </div>
           <div class="grid grid-cols-2 gap-2 text-[11px] text-gray-400 pt-3 border-t border-sddBorder mt-3">
-            <div>Cursor: <strong class="text-white">42%</strong></div>
-            <div>Claude Code: <strong class="text-white">31%</strong></div>
-            <div>Antigravity: <strong class="text-white">18%</strong></div>
-            <div>Windsurf/VSCode: <strong class="text-white">9%</strong></div>
+            ${clientEntries.length > 0
+              ? clientEntries.map(([name, count]) => `<div>${name}: <strong class="text-white">${count}</strong></div>`).join('')
+              : '<div class="col-span-2">Ningún cliente se identificó (`clientInfo` autodeclarado).</div>'}
           </div>
         </div>
 
@@ -445,39 +495,39 @@ function generateDashboard(customRoot) {
             <div>
               <div class="flex justify-between text-xs mb-1">
                 <span class="text-gray-400">Features vs. Fixes</span>
-                <span class="font-mono text-sddCyan">75% FEAT / 25% FIX</span>
+                <span class="font-mono text-sddCyan">${share(featCount, contracts.length)}% FEAT / ${share(fixCount, contracts.length)}% FIX</span>
               </div>
               <div class="w-full bg-gray-800 rounded-full h-2 flex overflow-hidden">
-                <div class="bg-sddCyan h-2" style="width: 75%"></div>
-                <div class="bg-sddAmber h-2" style="width: 25%"></div>
+                <div class="bg-sddCyan h-2" style="width: ${share(featCount, contracts.length)}%"></div>
+                <div class="bg-sddAmber h-2" style="width: ${share(fixCount, contracts.length)}%"></div>
               </div>
             </div>
 
             <div>
               <div class="flex justify-between text-xs mb-1">
                 <span class="text-gray-400">Modos de Gobernanza</span>
-                <span class="font-mono text-sddEmerald">60% STRICT / 40% EXPRESS</span>
+                <span class="font-mono text-sddEmerald">${share(strictCount, contracts.length)}% STRICT / ${share(expressCount, contracts.length)}% EXPRESS</span>
               </div>
               <div class="w-full bg-gray-800 rounded-full h-2 flex overflow-hidden">
-                <div class="bg-sddEmerald h-2" style="width: 60%"></div>
-                <div class="bg-sddPurple h-2" style="width: 40%"></div>
+                <div class="bg-sddEmerald h-2" style="width: ${share(strictCount, contracts.length)}%"></div>
+                <div class="bg-sddPurple h-2" style="width: ${share(expressCount, contracts.length)}%"></div>
               </div>
             </div>
 
             <div class="p-3 rounded bg-sddCard/60 border border-sddBorder text-xs text-gray-300 space-y-1">
               <div class="flex justify-between">
-                <span class="text-gray-400">Eficiencia Solve Auto-Repair:</span>
-                <strong class="text-sddEmerald">91.3% éxito</strong>
+                <span class="text-gray-400">Reintentos promedio por contract:</span>
+                <strong class="text-sddEmerald">${metricsHasData ? metrics.average_retries : 'sin datos'}</strong>
               </div>
               <div class="flex justify-between">
                 <span class="text-gray-400">Escalados a Gate por Ambigüedad:</span>
-                <strong class="text-sddAmber">8.7%</strong>
+                <strong class="text-sddAmber">${metricsHasData ? `${metrics.ambiguity_escalation_rate}%` : 'sin datos'}</strong>
               </div>
             </div>
           </div>
 
           <div class="text-[10px] text-gray-500 text-center">
-            Métricas acumuladas a través de sesiones de desarrollo
+            Contratos contados desde <code>contracts/</code>; calidad desde <code>.sdd/metrics.json</code>
           </div>
         </div>
 
@@ -487,13 +537,13 @@ function generateDashboard(customRoot) {
             <h4 class="text-xs font-bold uppercase text-gray-300 flex items-center gap-1.5">
               <i data-lucide="bar-chart-2" class="w-4 h-4 text-sddPurple"></i> Invocaciones por Herramienta MCP
             </h4>
-            <span class="text-[10px] font-mono text-sddPurple">Tráfico Relativo</span>
+            <span class="text-[10px] font-mono text-sddPurple">${hasUsage ? `${usage.totals.errors} errores` : 'sin datos'}</span>
           </div>
           <div class="min-h-[180px] flex items-center justify-center">
-            <canvas id="toolsChart"></canvas>
+            ${toolEntries.length > 0 ? '<canvas id="toolsChart"></canvas>' : '<p class="text-xs text-gray-500 text-center">sin datos</p>'}
           </div>
           <div class="text-[10px] text-gray-500 pt-2 border-t border-sddBorder text-center">
-            sdd_step_loop domina con el 45% del volumen de ejecución autónoma
+            ${toolEntries.length > 0 ? `Más usada: ${toolEntries[0][0]} (${toolEntries[0][1]} llamadas)` : 'Todavía no hay invocaciones registradas'}
           </div>
         </div>
 
@@ -564,109 +614,120 @@ function generateDashboard(customRoot) {
     </div>
   </footer>
 
-  <!-- INITIALIZE ICONS & CHARTS -->
+  <!-- INITIALIZE ICONS & CHARTS (data injected from on-disk files only) -->
   <script>
+    const CHART_DATA = ${JSON.stringify(chartData)};
+    const chartOrEmpty = (id) => {
+      const canvas = document.getElementById(id);
+      return canvas ? canvas.getContext('2d') : null;
+    };
+
     lucide.createIcons();
 
-    // 1. Layer Verification Chart (Radar / Polar Area)
-    const ctxLayers = document.getElementById('layersChart').getContext('2d');
-    new Chart(ctxLayers, {
-      type: 'doughnut',
-      data: {
-        labels: ['Funcional (Tests)', 'Estático (Tipos/Lint)', 'Seguridad (SAST)', 'Arquitectura (Guard)'],
-        datasets: [{
-          data: [50, 20, 15, 15],
-          backgroundColor: ['#06B6D4', '#10B981', '#F59E0B', '#8B5CF6'],
-          borderColor: '#111827',
-          borderWidth: 3
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { position: 'bottom', labels: { color: '#9CA3AF', font: { size: 10 } } }
+    // 1. Layer Verification Chart — real per-layer success rates (zeros when no ledger yet)
+    const ctxLayers = chartOrEmpty('layersChart');
+    if (ctxLayers) {
+      new Chart(ctxLayers, {
+        type: 'doughnut',
+        data: {
+          labels: ['Funcional (Tests)', 'Estático (Tipos/Lint)', 'Seguridad (SAST)', 'Arquitectura (Guard)'],
+          datasets: [{
+            data: CHART_DATA.layers,
+            backgroundColor: ['#06B6D4', '#10B981', '#F59E0B', '#8B5CF6'],
+            borderColor: '#111827',
+            borderWidth: 3
+          }]
         },
-        cutout: '70%'
-      }
-    });
-
-    // 2. Evolution Chart
-    const ctxEvolution = document.getElementById('evolutionChart').getContext('2d');
-    new Chart(ctxEvolution, {
-      type: 'line',
-      data: {
-        labels: ['v0.1.0', 'v0.2.0', 'v0.3.0', 'v0.4.0 Live'],
-        datasets: [{
-          label: 'First-Pass Rate %',
-          data: [60, 72, 80, 88],
-          borderColor: '#10B981',
-          backgroundColor: 'rgba(16, 185, 129, 0.1)',
-          fill: true,
-          tension: 0.4,
-          pointBackgroundColor: '#10B981'
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          y: { min: 40, max: 100, grid: { color: '#1F2937' }, ticks: { color: '#9CA3AF' } },
-          x: { grid: { color: '#1F2937' }, ticks: { color: '#9CA3AF' } }
-        },
-        plugins: {
-          legend: { display: false }
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { color: '#9CA3AF', font: { size: 10 } } }
+          },
+          cutout: '70%'
         }
-      }
-    });
+      });
+    }
 
-    // 3. Platform Distribution Chart (Doughnut)
-    const ctxPlatforms = document.getElementById('platformsChart').getContext('2d');
-    new Chart(ctxPlatforms, {
-      type: 'doughnut',
-      data: {
-        labels: ['Cursor IDE', 'Claude Code', 'Antigravity CLI/IDE', 'Windsurf / VS Code'],
-        datasets: [{
-          data: [42, 31, 18, 9],
-          backgroundColor: ['#06B6D4', '#F59E0B', '#10B981', '#8B5CF6'],
-          borderColor: '#111827',
-          borderWidth: 2
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false }
+    // 2. Local usage by tool — real invocations from .sdd/usage.json
+    const ctxEvolution = chartOrEmpty('evolutionChart');
+    if (ctxEvolution) {
+      new Chart(ctxEvolution, {
+        type: 'bar',
+        data: {
+          labels: CHART_DATA.toolLabels,
+          datasets: [{
+            label: 'Invocaciones',
+            data: CHART_DATA.toolValues,
+            backgroundColor: '#10B981',
+            borderRadius: 4
+          }]
         },
-        cutout: '65%'
-      }
-    });
-
-    // 4. MCP Tools Traffic Chart (Bar)
-    const ctxTools = document.getElementById('toolsChart').getContext('2d');
-    new Chart(ctxTools, {
-      type: 'bar',
-      data: {
-        labels: ['step_loop', 'validate_gate', 'create_contract', 'get_metrics', 'audit'],
-        datasets: [{
-          data: [58, 32, 18, 12, 8],
-          backgroundColor: '#8B5CF6',
-          borderRadius: 4
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          y: { grid: { color: '#1F2937' }, ticks: { color: '#9CA3AF' } },
-          x: { grid: { display: false }, ticks: { color: '#9CA3AF', font: { size: 9 } } }
-        },
-        plugins: {
-          legend: { display: false }
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { beginAtZero: true, grid: { color: '#1F2937' }, ticks: { color: '#9CA3AF', precision: 0 } },
+            x: { grid: { display: false }, ticks: { color: '#9CA3AF', font: { size: 9 } } }
+          },
+          plugins: {
+            legend: { display: false }
+          }
         }
-      }
-    });
+      });
+    }
+
+    // 3. Declared clients Chart (Doughnut) — only when the ledger has clients
+    const ctxPlatforms = chartOrEmpty('platformsChart');
+    if (ctxPlatforms) {
+      new Chart(ctxPlatforms, {
+        type: 'doughnut',
+        data: {
+          labels: CHART_DATA.clientLabels,
+          datasets: [{
+            data: CHART_DATA.clientValues,
+            backgroundColor: ['#06B6D4', '#F59E0B', '#10B981', '#8B5CF6', '#EF4444'],
+            borderColor: '#111827',
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          cutout: '65%'
+        }
+      });
+    }
+
+    // 4. MCP Tools Traffic Chart (Bar) — same real usage ledger
+    const ctxTools = chartOrEmpty('toolsChart');
+    if (ctxTools) {
+      new Chart(ctxTools, {
+        type: 'bar',
+        data: {
+          labels: CHART_DATA.toolLabels,
+          datasets: [{
+            data: CHART_DATA.toolValues,
+            backgroundColor: '#8B5CF6',
+            borderRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { beginAtZero: true, grid: { color: '#1F2937' }, ticks: { color: '#9CA3AF', precision: 0 } },
+            x: { grid: { display: false }, ticks: { color: '#9CA3AF', font: { size: 9 } } }
+          },
+          plugins: {
+            legend: { display: false }
+          }
+        }
+      });
+    }
   </script>
 </body>
 </html>
@@ -680,7 +741,10 @@ function generateDashboard(customRoot) {
     path: outputPath,
     total_contracts: contracts.length,
     resolved_count: resolvedCount,
-    last_updated: lastUpdated
+    last_updated: lastUpdated,
+    metrics_source: metricsSource,
+    usage_source: usageSource,
+    tool_calls: usage.totals.calls
   };
 }
 

@@ -60,7 +60,11 @@ function runMcpTest() {
     try {
       // 1. Initialize
       console.log('\n1️⃣ Enviando handshake initialize...');
-      const initRes = await sendRequest('initialize');
+      const initRes = await sendRequest('initialize', {
+        protocolVersion: '2024-11-05',
+        // FEAT-0008: declared client identity used for local usage attribution.
+        clientInfo: { name: 'demo-e2e-client', version: '9.9.9' }
+      });
       console.log('   ✅ Inicializado:', initRes.result.serverInfo);
       assert.strictEqual(initRes.result.serverInfo.name, 'sdd-gl-mcp-server');
 
@@ -121,7 +125,11 @@ function runMcpTest() {
       });
       const metricsData = JSON.parse(metricsRes.result.content[0].text);
       console.log('   ✅ Métricas obtenidas:', metricsData);
-      assert.ok(metricsData.first_pass_rate_feat !== undefined);
+      // FEAT-0016: the ledger schema is explicit (zeros when no data), never fabricated numbers.
+      assert.strictEqual(metricsData.schema_version, 1);
+      assert.ok(metricsData.first_pass_quality_rate !== undefined);
+      assert.ok(metricsData.counters && metricsData.counters.steps_total !== undefined);
+      assert.strictEqual(metricsData.source, 'defaults');
 
       // 6. Audit Traceability
       console.log('\n6️⃣ Invocando herramienta: sdd_audit_traceability...');
@@ -131,7 +139,9 @@ function runMcpTest() {
       });
       const auditData = JSON.parse(auditRes.result.content[0].text);
       console.log('   ✅ Reporte de trazabilidad:', auditData);
-      assert.strictEqual(auditData.status, 'PASSED');
+      assert.ok(['PASSED', 'GAPS_FOUND'].includes(auditData.status));
+      assert.ok(Array.isArray(auditData.orphan_specs));
+      assert.strictEqual(typeof auditData.specification_coverage_score, 'number');
 
       // 7. Get Status Dashboard
       console.log('\n7️⃣ Invocando herramienta: sdd_get_status...');
@@ -142,6 +152,20 @@ function runMcpTest() {
       const statusData = JSON.parse(statusRes.result.content[0].text);
       console.log('   ✅ Dashboard de contratos:', statusData);
       assert.ok(statusData.total_contracts >= 1);
+
+      // 8. Local usage telemetry (FEAT-0008): the ledger must reflect this session.
+      console.log('\n8️⃣ Verificando telemetría local de uso (.sdd/usage.json)...');
+      const usagePath = path.join(tmpRoot, '.sdd', 'usage.json');
+      assert.ok(fs.existsSync(usagePath), 'usage.json must be created by real usage');
+      const usage = JSON.parse(fs.readFileSync(usagePath, 'utf8'));
+      console.log('   ✅ Uso registrado:', usage.totals, usage.clients);
+
+      assert.strictEqual(usage.schema_version, 1);
+      assert.strictEqual(usage.sessions, 1, 'one initialize = one session');
+      assert.ok(usage.clients['demo-e2e-client@9.9.9'] === 1, 'declared client must be attributed');
+      assert.ok(usage.totals.calls >= 5, 'every tool call must be counted');
+      assert.ok(usage.tools.sdd_get_status >= 1 && usage.tools.sdd_audit_traceability >= 1);
+      assert.ok(!JSON.stringify(usage).includes(tmpRoot), 'no local paths in the ledger');
 
       console.log('\n🎉 ¡TODAS LAS PRUEBAS DEL SERVIDOR MCP PASARON SATISFACTORIAMENTE AL 100%!');
       server.kill();
