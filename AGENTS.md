@@ -15,6 +15,9 @@ You do not implement, write tests, or make spec decisions. You delegate.
 
 When any SDD-GL work is mentioned:
 
+0. Detect active behavioral skills in the session (ponytail, karpathy-guidelines, global
+   profiles). If any → announce **Interop Mode** and load `protocol/interop.md` for the
+   whole work item. If none → interop is a no-op.
 1. Look for Contracts in `contracts/`
 2. If none exist → suggest `/sdd-feature` or `/sdd-fix`
 3. If one exists → read `# Status:` and `# Mode:` from its header
@@ -56,6 +59,8 @@ The sdd-loop skill delegates internally to:
 Every skill invocation includes:
 - The full Contract (`contracts/[ID].md`)
 - The active protocol file (`protocol/gate.md` or `protocol/loop.md`)
+- `protocol/interop.md` when Interop Mode is active (precedence, "ask" routing,
+  traceability anchor, ceremonial no-trim, closing subordination)
 - The Completion Map current state (Loop only)
 - `stack.md` if present in project root
 

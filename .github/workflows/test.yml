@@ -1,0 +1,71 @@
+name: SDD-GL CI
+
+# FEAT-0010: reproducible CI on a clean clone. It never consumes the private
+# maintainer state (contracts/, .sdd/) and never dirties the tracked tree.
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  test:
+    name: Suite + MCP server smoke
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Run test suite
+        run: npm test
+
+      - name: MCP server starts and exposes exactly 8 tools
+        run: |
+          node - <<'NODE'
+          const { TOOLS } = require('./mcp/server.js');
+          const names = TOOLS.map(tool => tool.name);
+          if (names.length !== 8) {
+            console.error(`Expected 8 tools, got ${names.length}: ${names.join(', ')}`);
+            process.exit(1);
+          }
+          console.log(`OK: ${names.length} tools -> ${names.join(', ')}`);
+          NODE
+
+      - name: MCP server responds over stdio JSON-RPC
+        run: |
+          node - <<'NODE'
+          const { spawn } = require('node:child_process');
+          const server = spawn('node', ['mcp/server.js'], { stdio: ['pipe', 'pipe', 'inherit'] });
+          let buffer = '';
+          const timer = setTimeout(() => {
+            console.error('Timeout: the MCP server did not answer tools/list');
+            server.kill();
+            process.exit(1);
+          }, 15000);
+          server.stdout.on('data', chunk => {
+            buffer += chunk.toString();
+            if (buffer.includes('"tools"')) {
+              clearTimeout(timer);
+              server.kill();
+              process.exit(0);
+            }
+          });
+          server.stdin.write(JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' }) + '\n');
+          NODE
+
+      - name: Working tree stayed clean
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "The suite modified tracked files:"
+            git status --porcelain
+            exit 1
+          fi

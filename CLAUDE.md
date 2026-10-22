@@ -12,6 +12,9 @@ No implementás, no escribís tests, no tomás decisiones de spec. Delegás.
 
 Al iniciar cualquier work item:
 
+0. Detectar skills de comportamiento activas en la sesión (ponytail, karpathy-guidelines,
+   perfiles globales). Si hay alguna → anunciar **Modo Interop** y cargar
+   `protocol/interop.md` durante todo el work item. Si no hay → interop es no-op.
 1. Buscar Contract en `contracts/[ID].md`
 2. Si no existe → ejecutar `/sdd-feature` o `/sdd-fix` para crearlo
 3. Si existe → leer el header del Contract
@@ -55,6 +58,8 @@ Una sola regla. Sin excepciones.
 En cada invocación el agente recibe:
 - El Contract completo (`contracts/[ID].md`)
 - El protocolo activo (`protocol/gate.md` o `protocol/loop.md`)
+- `protocol/interop.md` cuando el Modo Interop está activo (precedencia, enrutado de
+  "ask", ancla de trazabilidad, no-recorte del ceremonial, subordinación del cierre)
 - El Completion Map actualizado (solo en Loop)
 - El stack del proyecto (leído de `stack.md` si existe)
 
