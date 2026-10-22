@@ -5,7 +5,6 @@
 [![Version](https://img.shields.io/badge/version-0.4.0-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![MCP Protocol](https://img.shields.io/badge/MCP-Protocol%20Ready-purple)](mcp/sdd-gl-mcp-spec.md)
-[![Live Dashboard](https://img.shields.io/badge/Live%20Dashboard-GitHub%20Pages-2ea44f)](https://charlyzeta.github.io/SDD-GL/)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-orange)](https://docs.claude.ai/code)
 [![Stack](https://img.shields.io/badge/stack-agnostic-lightgrey)](#3-recommended-stack-configuration)
 
@@ -233,9 +232,9 @@ Traditional AI assistants only check if code compiles or basic tests pass. SDD-G
 
 SDD-GL includes an interactive, publication-ready **Living Visual Dashboard**. Each user generates their own copy from their own machine:
 
-👉 **[View the maintainer's dashboard on GitHub Pages](https://charlyzeta.github.io/SDD-GL/)**
+![Living Dashboard with real metrics](docs/assets/dashboard-sample.png)
 
-![Living Dashboard Preview](assets/sdd-gl-cover.png)
+*Real capture of an example project driven through the Loop: 97.1% FPQR, 72 MCP invocations across 2 client sessions, 2 contracts resolved.*
 
 ### Key Dashboard Capabilities
 * 📊 **First-Pass Quality Rate (FPQR)** & layer gauges, computed from `.sdd/metrics.json`; they read "sin datos" until real telemetry exists.

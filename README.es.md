@@ -5,7 +5,6 @@
 [![Version](https://img.shields.io/badge/version-0.4.0-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![MCP Protocol](https://img.shields.io/badge/MCP-Protocol%20Ready-purple)](mcp/sdd-gl-mcp-spec.md)
-[![Live Dashboard](https://img.shields.io/badge/Live%20Dashboard-GitHub%20Pages-2ea44f)](https://charlyzeta.github.io/SDD-GL/)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-orange)](https://docs.claude.ai/code)
 [![Stack](https://img.shields.io/badge/stack-agnostic-lightgrey)](#3-configuración-del-stack-recomendado)
 
@@ -234,9 +233,9 @@ Los asistentes de IA tradicionales solo comprueban si el código compila o pasan
 
 SDD-GL incluye un **Dashboard Visual Vivo** interactivo y publicable. Cada usuario genera su propia copia desde su máquina:
 
-👉 **[Ver el dashboard del mantenedor en GitHub Pages](https://charlyzeta.github.io/SDD-GL/)**
+![Dashboard con métricas reales](docs/assets/dashboard-sample.png)
 
-![Vista Previa del Dashboard](assets/sdd-gl-cover.png)
+*Captura real de un proyecto de ejemplo conducido por el Loop: 97.1% FPQR, 72 invocaciones del MCP en 2 sesiones de cliente, 2 contratos resueltos.*
 
 ### Capacidades Destacadas del Dashboard
 * 📊 **Tasa de Calidad en Primer Pase (FPQR)** e indicadores por capa, calculados desde `.sdd/metrics.json`; muestran "sin datos" hasta que exista telemetría real.

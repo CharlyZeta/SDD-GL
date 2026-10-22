@@ -272,6 +272,23 @@ function generateDashboard(customRoot, options = {}) {
   <!-- MAIN CONTENT CONTAINER -->
   <main class="max-w-7xl mx-auto px-6 py-8 flex-1 w-full space-y-8">
 
+    ${publicShowcase ? `
+    <!-- SHOWCASE SAMPLE: real capture of a project in use (public page only) -->
+    <section class="glass-card p-6 rounded-xl space-y-4 border border-sddCyan/20">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            <i data-lucide="image" class="w-5 h-5 text-sddCyan"></i> Así se ve con un proyecto en uso
+          </h2>
+          <p class="text-xs text-gray-400">Captura real de un proyecto de ejemplo conducido por el Loop: 97.1% FPQR, 72 invocaciones del MCP en 2 sesiones de cliente.</p>
+        </div>
+        <span class="text-[10px] px-2.5 py-1 rounded bg-sddAmber/20 text-sddAmber border border-sddAmber/30 font-semibold">proyecto de ejemplo</span>
+      </div>
+      <img src="assets/dashboard-sample.png" alt="Dashboard con métricas reales de un proyecto de ejemplo" class="w-full rounded-lg border border-sddBorder">
+      <p class="text-[11px] text-gray-500">Esta página pública es el showcase del framework: no lee los <code>contracts/</code> ni el <code>.sdd/</code> privados, por eso las métricas de abajo aparecen como <strong>sin datos</strong>. En tu propio proyecto se llenan solas al usar el servidor MCP.</p>
+    </section>
+    ` : ''}
+
     <!-- HERO KPI STAT CARDS -->
     <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       
@@ -626,7 +643,6 @@ function generateDashboard(customRoot, options = {}) {
       </div>
       <div class="flex space-x-4">
         <a href="https://github.com/CharlyZeta/SDD-GL" class="hover:text-gray-300">GitHub</a>
-        <a href="https://charlyzeta.github.io/SDD-GL/" class="hover:text-gray-300">Live Dashboard</a>
       </div>
     </div>
   </footer>

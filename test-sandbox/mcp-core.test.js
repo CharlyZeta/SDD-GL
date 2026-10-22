@@ -339,6 +339,53 @@ describe('FEAT-0007 — Acceptance Criteria', () => {
     assert.strictEqual(audit.covered_criteria, audit.total_criteria - audit.orphan_specs.length);
   });
 
+  test('BR-001: the four "Main Flow" rows can be addressed individually by layer', () => {
+    const file = writeContract('FEAT-9215', {
+      status: 'APPROVED',
+      mode: 'LOOP',
+      completionMap: [
+        '# [item-id]|[layer]|[test-id]|[agente]|[status]',
+        '# Main Flow | functional | functional-tests:FEAT-9215-main | tester | ❌',
+        '# Main Flow | static | static-analysis:FEAT-9215-main | verifier | ❌',
+        '# Main Flow | security | security-scan:FEAT-9215-main | verifier | ❌',
+        '# Main Flow | arch | arch-guard:FEAT-9215-main | verifier | ❌'
+      ]
+    });
+
+    const claim = handleToolCall('sdd_step_loop', {
+      contract_id: 'FEAT-9215',
+      item_id: 'Main Flow',
+      layer: 'static'
+    });
+
+    const text = readFile(file);
+    assert.strictEqual(claim.layer, 'static');
+    assert.strictEqual(claim.new_status, '⏳');
+    assert.match(text, /# Main Flow \| functional \| functional-tests:FEAT-9215-main \| tester \| ❌/);
+    assert.match(text, /# Main Flow \| static \| static-analysis:FEAT-9215-main \| verifier \| ⏳/);
+    assert.match(text, /# Main Flow \| security \| security-scan:FEAT-9215-main \| verifier \| ❌/);
+  });
+
+  test('BR-001: an unknown layer is reported instead of guessing another row', () => {
+    writeContract('FEAT-9216', {
+      status: 'APPROVED',
+      mode: 'LOOP',
+      completionMap: [
+        '# [item-id]|[layer]|[test-id]|[agente]|[status]',
+        '# Main Flow | functional | functional-tests:FEAT-9216-main | tester | ❌'
+      ]
+    });
+
+    const result = handleToolCall('sdd_step_loop', {
+      contract_id: 'FEAT-9216',
+      item_id: 'Main Flow',
+      layer: 'security'
+    });
+
+    assert.strictEqual(result.item_status, 'BLOCKED');
+    assert.match(result.reason, /layer "security"/);
+  });
+
   test('Main Flow: a contract without Completion Map gets one built and persisted', () => {
     const file = writeContract('FEAT-9214', {
       status: 'APPROVED',

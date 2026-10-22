@@ -467,6 +467,11 @@ const TOOLS = [
       properties: {
         contract_id: { type: 'string', description: 'Target contract ID in APPROVED status' },
         item_id: { type: 'string', description: 'Specific criterion/layer ID or "auto" for next item' },
+        layer: {
+          type: 'string',
+          enum: ['functional', 'static', 'security', 'arch'],
+          description: 'Disambiguates rows that share a name across layers (e.g. the four "Main Flow" rows).'
+        },
         result: {
           type: 'string',
           enum: ['PASS', 'FAIL', 'BLOCKED', 'NOT_WRITABLE'],
@@ -713,11 +718,16 @@ ${args.intent || '[Inferred from user description]'}
           };
         }
       } else {
-        // Find specific item_id (matches the name column exactly)
+        // Find a specific item. `layer` disambiguates the four rows that share the
+        // "Main Flow" name (functional/static/security/arch).
+        const wantedLayer = args.layer ? String(args.layer).trim() : null;
         for (let i = 0; i < parsedLines.length; i++) {
-          if (parsedLines[i].name === itemId) {
+          const candidate = parsedLines[i];
+          const nameMatches = candidate.name === itemId;
+          const layerMatches = !wantedLayer || candidate.layer === wantedLayer;
+          if (nameMatches && layerMatches) {
             targetLineIndex = i;
-            targetLine = parsedLines[i].raw;
+            targetLine = candidate.raw;
             itemIdFound = itemId;
             break;
           }
@@ -726,7 +736,9 @@ ${args.intent || '[Inferred from user description]'}
           return {
             contract_id: args.contract_id,
             item_status: 'BLOCKED',
-            reason: `Item ${itemId} not found in Completion Map.`
+            reason: wantedLayer
+              ? `Item ${itemId} not found in layer "${wantedLayer}" of the Completion Map.`
+              : `Item ${itemId} not found in Completion Map.`
           };
         }
       }

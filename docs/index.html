@@ -56,7 +56,7 @@
       <div class="flex items-center space-x-4">
         <div class="flex items-center text-xs text-gray-400 bg-sddCard/80 px-3 py-1.5 rounded-md border border-sddBorder">
           <span class="w-2 h-2 rounded-full bg-sddEmerald animate-pulse mr-2"></span>
-          Última actualización: <span class="text-gray-200 font-mono ml-1.5">2026-10-22 22:27:37 UTC</span>
+          Última actualización: <span class="text-gray-200 font-mono ml-1.5">2026-10-22 22:33:08 UTC</span>
         </div>
         <a href="https://github.com/CharlyZeta/SDD-GL" target="_blank" class="flex items-center gap-1.5 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-xs text-white rounded-md transition font-medium border border-gray-700">
           <i data-lucide="github" class="w-4 h-4"></i> GitHub
@@ -67,6 +67,23 @@
 
   <!-- MAIN CONTENT CONTAINER -->
   <main class="max-w-7xl mx-auto px-6 py-8 flex-1 w-full space-y-8">
+
+    
+    <!-- SHOWCASE SAMPLE: real capture of a project in use (public page only) -->
+    <section class="glass-card p-6 rounded-xl space-y-4 border border-sddCyan/20">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            <i data-lucide="image" class="w-5 h-5 text-sddCyan"></i> Así se ve con un proyecto en uso
+          </h2>
+          <p class="text-xs text-gray-400">Captura real de un proyecto de ejemplo conducido por el Loop: 97.1% FPQR, 72 invocaciones del MCP en 2 sesiones de cliente.</p>
+        </div>
+        <span class="text-[10px] px-2.5 py-1 rounded bg-sddAmber/20 text-sddAmber border border-sddAmber/30 font-semibold">proyecto de ejemplo</span>
+      </div>
+      <img src="assets/dashboard-sample.png" alt="Dashboard con métricas reales de un proyecto de ejemplo" class="w-full rounded-lg border border-sddBorder">
+      <p class="text-[11px] text-gray-500">Esta página pública es el showcase del framework: no lee los <code>contracts/</code> ni el <code>.sdd/</code> privados, por eso las métricas de abajo aparecen como <strong>sin datos</strong>. En tu propio proyecto se llenan solas al usar el servidor MCP.</p>
+    </section>
+    
 
     <!-- HERO KPI STAT CARDS -->
     <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -474,7 +491,6 @@
       </div>
       <div class="flex space-x-4">
         <a href="https://github.com/CharlyZeta/SDD-GL" class="hover:text-gray-300">GitHub</a>
-        <a href="https://charlyzeta.github.io/SDD-GL/" class="hover:text-gray-300">Live Dashboard</a>
       </div>
     </div>
   </footer>
