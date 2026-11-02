@@ -73,7 +73,7 @@ Comandos:
   next                   Qué hacer ahora (respeta dependencias)
   report <ID>            Informe de ejecución del contrato
   approve <ID> --yes     Aprueba el contrato (HO-Gate) con huella del spec
-  loop <ID>              Reclama el próximo ítem (--pass/--fail/--blocked para reportar)
+  loop <ID>              Reclama el próximo ítem (--item/--layer; --pass/--fail/--blocked para reportar)
   graph                  Orden de ejecución según depends_on
   sync                   Verifica que cada agente exista en todas las plataformas
   doctor                 Diagnóstico de la instalación
@@ -346,7 +346,8 @@ function commandNext() {
     });
   }
 
-  for (const contract of loops.filter(actionable)) {
+  const stalledIds = new Set(stalled.map(entry => entry.contract.id));
+  for (const contract of loops.filter(actionable).filter(item => !stalledIds.has(item.id))) {
     steps.push({
       action: `Ejecutar el Loop de ${contract.id}`,
       command: `sdd loop ${contract.id}`,
@@ -905,7 +906,8 @@ function commandLoop() {
       contract_id: contractId,
       item_id: flagValue('--item') || 'auto',
       result: wantsPass ? 'PASS' : 'FAIL',
-      evidence: evidence || '(sin evidencia)'
+      evidence: evidence || '(sin evidencia)',
+      layer: flagValue('--layer') || undefined
     }, 'loop', contractId);
 
     if (result.error) fail(result.error);
@@ -925,7 +927,8 @@ function commandLoop() {
   // Default: claim the next item and hand its context to the agent.
   const claim = callTool('sdd_step_loop', {
     contract_id: contractId,
-    item_id: flagValue('--item') || 'auto'
+    item_id: flagValue('--item') || 'auto',
+    layer: flagValue('--layer') || undefined
   }, 'loop', contractId);
 
   if (claim.error) fail(claim.error);

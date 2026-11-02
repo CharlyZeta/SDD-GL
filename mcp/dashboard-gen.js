@@ -265,7 +265,9 @@ function generateDashboard(customRoot, options = {}) {
   })();
   const activity = buildActivitySeries(usage.session_log);
   const activityMax = Math.max(1, ...activity.map(day => day.value));
-  const callsPerSession = usage.sessions > 0 ? Math.round((usage.totals.calls / usage.sessions) * 10) / 10 : 0;
+  // Sessions are opened by MCP clients, so the average uses MCP calls only.
+  const sessionCalls = usage.sources.mcp !== undefined ? usage.sources.mcp : usage.totals.calls;
+  const callsPerSession = usage.sessions > 0 ? Math.round((sessionCalls / usage.sessions) * 10) / 10 : 0;
   const lastActivity = usage.last_updated ? String(usage.last_updated).slice(0, 16).replace('T', ' ') : null;
 
   // Origin (MCP client vs CLI) and work type (feature/fix) totals.

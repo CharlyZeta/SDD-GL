@@ -591,3 +591,45 @@ describe('CLI — dependency graph', () => {
     }
   });
 });
+
+describe('CLI — loop with --layer', () => {
+  test('--layer addresses a specific Main Flow row', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-cli-layer-'));
+    try {
+      fs.mkdirSync(path.join(root, 'contracts'), { recursive: true });
+      fs.writeFileSync(path.join(root, 'contracts', 'FIX-9901.md'), `# CONTRACT: Capas
+# ID: FIX-9901
+# Status: APPROVED
+# Mode: LOOP
+# Gate-Mode: EXPRESS
+
+## Pasos
+1. Uno.
+2. Dos.
+3. Tres.
+
+## Criterios de Aceptación
+- AC-001: GIVEN a WHEN b THEN c
+
+## Completion Map
+# [item-id]|[layer]|[test-id]|[agente]|[status]
+# Main Flow | functional | functional-tests:FIX-9901-main | tester | ✅
+# Main Flow | static | static-analysis:FIX-9901-main | verifier | ❌
+# Main Flow | security | security-scan:FIX-9901-main | verifier | ❌
+# Main Flow | arch | arch-guard:FIX-9901-main | verifier | ❌
+`, 'utf8');
+
+      const result = run(['loop', 'FIX-9901', '--item', 'Main Flow', '--layer', 'security', '--json'], { cwd: root });
+      const data = JSON.parse(result.stdout);
+
+      assert.strictEqual(result.code, 0);
+      assert.strictEqual(data.layer, 'security');
+
+      const text = fs.readFileSync(path.join(root, 'contracts', 'FIX-9901.md'), 'utf8');
+      assert.match(text, /# Main Flow \| security \| security-scan:FIX-9901-main \| verifier \| ⏳/);
+      assert.match(text, /# Main Flow \| static \| static-analysis:FIX-9901-main \| verifier \| ❌/);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+});

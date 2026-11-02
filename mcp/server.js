@@ -605,8 +605,9 @@ function recordToolCall(toolName, succeeded, meta = {}) {
     usage.cli_commands[meta.command] = (usage.cli_commands[meta.command] || 0) + 1;
   }
 
-  // Attribute the call to the most recent session (per-project usage view).
-  if (Array.isArray(usage.session_log) && usage.session_log.length > 0) {
+  // Attribute the call to the most recent session. Sessions belong to MCP clients;
+  // CLI invocations are counted in `sources.cli` but do not inflate a session.
+  if (source === 'mcp' && Array.isArray(usage.session_log) && usage.session_log.length > 0) {
     const session = usage.session_log[usage.session_log.length - 1];
     session.calls = (session.calls || 0) + 1;
     session.last_call_at = now;
