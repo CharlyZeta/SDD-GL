@@ -1,6 +1,6 @@
 {
   "name": "sdd-gl",
-  "version": "0.4.0",
+  "version": "0.5.2",
   "description": "Spec-Driven Development with Gate/Loop protocol. Stack-agnostic process for features and fixes. Operates in Gate mode (human-controlled spec) and Loop mode (autonomous execution against inferred criteria). Supports Claude Code, Antigravity CLI, and Antigravity IDE.",
   "author": "Gerardo Maidana",
   "license": "MIT",
@@ -73,16 +73,6 @@
       "description": "Generates and updates the standalone Living Visual Dashboard (docs/index.html) with real-time First-Pass Quality metrics, multi-layer verification matrix, timeline, and interactive contract explorer",
       "file": ".agents/skills/sdd-dashboard/SKILL.md",
       "also_as_command": ".claude/commands/sdd-dashboard.md"
-    },
-    {
-      "name": "sdd-solve-agent",
-      "description": "Specialized repair agent for fast, localized fixes (lint errors, syntax issues, missing imports, minor type narrowing, off-by-one test assertions). Operates within the Loop with a 3-retry limit. Strictly prohibited from making architectural or business logic design decisions",
-      "file": ".agents/skills/sdd-solve-agent/SKILL.md"
-    },
-    {
-      "name": "sdd-verifier-agent",
-      "description": "Specialized QA & Quality verification agent responsible for executing non-functional layers: static analysis, type checking, security scanning, and architectural boundary compliance against CONSTITUTION.md",
-      "file": ".agents/skills/sdd-verifier-agent/SKILL.md"
     }
   ],
 

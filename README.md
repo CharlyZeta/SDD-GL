@@ -2,7 +2,7 @@
 
 ![SDD-GL Cover](assets/sdd-gl-cover.png)
 
-[![Version](https://img.shields.io/badge/version-0.4.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.5.2-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![MCP Protocol](https://img.shields.io/badge/MCP-Protocol%20Ready-purple)](mcp/sdd-gl-mcp-spec.md)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-orange)](https://docs.claude.ai/code)
@@ -739,9 +739,11 @@ Cycle 3: AC-001 ✅, AC-002 ✅, AC-003 ✅ → Final Status: RESOLVED
 - It does not guarantee test quality if the underlying contract has logical flaws or is poorly written.
 - It requires a compatible runtime (such as Claude Code or Antigravity CLI) to run the agent workflows.
 
-### Known Limitations (Version 0.4.0)
-* **Immutable Completion Map**: The Completion Map is generated once upon transitioning to Loop mode. If the contract is manually edited while the Loop is active, the map will not automatically resynchronize until the next cycle.
-* **No Dependency Trees**: Native support for declaring prerequisites between contracts (e.g., `depends_on: FEAT-0001`) is scheduled for v0.5.0.
+### Known Limitations (Version 0.5.2)
+* **Completion Map is not reconciled on manual edits**: it is built once when the Loop starts. If the contract changes while the Loop is active, the map is not re-synced until the next cycle. Per-criterion invalidation is planned for 0.6.0.
+* **No `sdd split`**: the Gate warns when a contract exceeds the size budget, but it does not propose the cut yet.
+* **Not published to npm**: the `sdd` binary ships in the repository (and via `npx github:CharlyZeta/SDD-GL`); the package is not on the registry yet.
+* **Sample screenshot lags the UI**: `docs/assets/dashboard-sample.png` predates the usage-origin and pending-work panels.
 
 ---
 
@@ -749,67 +751,49 @@ Cycle 3: AC-001 ✅, AC-002 ✅, AC-003 ✅ → Final Status: RESOLVED
 
 ```
 sdd-gl/
-├── README.md              ← Main documentation (English).
-├── README.es.md           ← Complete documentation in Spanish.
-├── CHANGELOG.md           ← Project version history and changelog.
-├── plugin.json            ← Plugin and multi-platform manifest.
-├── CLAUDE.md              ← Orchestrator for Claude Code.
-├── AGENTS.md              ← Orchestrator for Antigravity CLI and IDE.
-├── CONSTITUTION.md        ← Project-wide architectural laws & security guardrails.
-├── LICENSE                ← Project software license (MIT).
+├── README.md                ← Main documentation (English).
+├── README.es.md             ← Complete documentation in Spanish.
+├── CHANGELOG.md             ← Version history (current: 0.5.2).
+├── plugin.json              ← Plugin and multi-platform manifest.
+├── package.json             ← Package manifest, scripts and the `sdd` binary.
+├── package-lock.json        ← Locked dependency tree (CI uses `npm ci`).
+├── CLAUDE.md                ← Orchestrator for Claude Code.
+├── AGENTS.md                ← Orchestrator for Antigravity CLI and IDE.
+├── CONSTITUTION.md          ← Architectural laws and security guardrails.
+├── LICENSE                  ← MIT.
+├── bin/
+│   └── sdd.js               ← CLI: init, status, new, validate, next, report, approve, loop, graph, sync, doctor.
 ├── docs/
-│   └── index.html         ← Standalone Living Visual Dashboard (GitHub Pages).
+│   ├── index.html           ← Public showcase dashboard (examples/ only, never the private contracts).
+│   ├── INSTALACION.md       ← Step-by-step installation per platform.
+│   └── assets/
+│       └── dashboard-sample.png ← Real capture of an example project.
 ├── protocol/
-│   ├── contract.md        ← Specification format, inference rules & multi-layer Completion Map.
-│   ├── gate.md            ← Adaptive Gate protocol (EXPRESS vs. STRICT).
-│   └── loop.md            ← Multi-layer Loop, retry limits, solve-agent & Glass Box audit.
-├── presets/               ← Official zero-config stack presets.
-│   ├── java-spring-boot.md ← Java 21+, Spring Boot 3.3+, JUnit 5, Hexagonal/DDD.
-│   ├── python-fastapi.md   ← Python 3.12+, FastAPI, Pytest, Pydantic v2, Async.
-│   └── typescript-node.md  ← TypeScript 5+, Node/Bun, Vitest/Jest, Zod, Prisma.
-├── mcp/                   ← Model Context Protocol (MCP) Server.
-│   ├── package.json       ← Node.js MCP server manifest (@sdd-gl/mcp-server).
-│   ├── server.js          ← Executable stdio JSON-RPC server with complete tool suite.
-│   ├── dashboard-gen.js   ← Visual dashboard generator engine with sanitized telemetry.
-│   └── sdd-gl-mcp-spec.md ← Tool schemas and multi-client config instructions.
+│   ├── contract.md          ← Contract format, inference rules and atomicity budget.
+│   ├── gate.md              ← Gate protocol (EXPRESS vs STRICT) and checklists.
+│   ├── loop.md              ← Loop protocol, retries, Glass Box audit, ambiguity route.
+│   └── interop.md           ← Behavioral skills interop (precedence, ask routing, closing).
+├── presets/                 ← Zero-config stack presets.
+│   ├── java-spring-boot.md
+│   ├── python-fastapi.md
+│   └── typescript-node.md
+├── mcp/                     ← MCP stdio server and dashboard generator.
+│   ├── package.json
+│   ├── server.js            ← JSON-RPC server, 8 tools, local quality and usage ledgers.
+│   ├── dashboard-gen.js     ← Dashboard generator (local and public showcase modes).
+│   └── sdd-gl-mcp-spec.md   ← Tool schemas and per-client configuration.
 ├── assets/
-│   └── sdd-gl-cover.png   ← Architecture banner and diagram assets.
-├── test-sandbox/          ← Multi-layer testbed for automated validation.
-│   ├── escrow.js
-│   ├── escrow.test.js
-│   └── multilayer-verifier.test.js
-├── .claude/               ← Claude Code command and agent wrappers.
-│   ├── agents/
-│   │   ├── requirements-agent.md
-│   │   ├── reviewer-agent.md
-│   │   ├── coder-agent.md
-│   │   ├── tester-agent.md
-│   │   ├── verifier-agent.md
-│   │   └── solve-agent.md
-│   └── commands/
-│       ├── sdd-feature.md
-│       ├── sdd-fix.md
-│       ├── sdd-status.md
-│       ├── sdd-metrics.md
-│       └── sdd-audit.md
-├── .agents/skills/        ← Antigravity skills definitions.
-│   ├── sdd-gate/
-│   ├── sdd-loop/
-│   ├── sdd-feature/
-│   ├── sdd-fix/
-│   ├── sdd-status/
-│   ├── sdd-metrics/
-│   ├── sdd-audit/
-│   ├── sdd-requirements-agent/
-│   ├── sdd-reviewer-agent/
-│   ├── sdd-coder-agent/
-│   ├── sdd-tester-agent/
-│   ├── sdd-verifier-agent/
-│   └── sdd-solve-agent/
+│   └── sdd-gl-cover.png
 ├── examples/
-│   └── contracts/          ← Public showcase contracts (case studies & resolved examples).
-└── contracts/              ← Local working directory for specs (gitignored — private).
-    └── .gitkeep
+│   └── contracts/           ← Public showcase contracts (curated and resolved).
+├── contracts/               ← Local working specs (gitignored — private).
+├── test-sandbox/            ← 15 suites: core, CLI, metrics, usage, CI, interop and fixtures.
+├── .claude/
+│   ├── agents/              ← 6 agent adapters (Spanish).
+│   └── commands/            ← 6 slash commands.
+├── .agents/skills/          ← 14 skills (orchestrators and agents, English).
+└── .github/workflows/
+    └── test.yml             ← CI: suite, 8-tool check, stdio handshake, clean tree.
 ```
 
 ---
@@ -834,7 +818,7 @@ sdd-gl/
 - [x] Official Stack Presets for Spring Boot, FastAPI, and TypeScript in `presets/`.
 - [x] Formal Model Context Protocol (MCP) JSON-RPC specification.
 
-### Version 0.4.0 — Layered Verification (AC/DC), Auto-Repair & Executable MCP Server (Current Release)
+### Version 0.4.0 — Layered Verification (AC/DC), Auto-Repair & Executable MCP Server (Released)
 - [x] **Layered Verification Protocol (AC/DC Layer)**: 4 verification layers (`functional`, `static`, `security`, `arch`) in tubular Completion Map format.
 - [x] **Rapid Auto-Repair (`solve-agent`)**: Auto-fixes localized syntax, lint, and typing findings in $\le 3$ attempts.
 - [x] **Verification Agent (`verifier-agent`)**: Executes static, security, and architectural guardrail layers.
@@ -843,10 +827,25 @@ sdd-gl/
 - [x] **Executable MCP Server (`@sdd-gl/mcp-server`)**: Runnable Node.js JSON-RPC server in `mcp/server.js`.
 - [x] **Project Constitution (`CONSTITUTION.md`)**: Architectural and security guardrails for autonomous loop operations.
 
-### Version 0.5.0 (Upcoming)
-- [ ] GitHub Actions CI workflow (`sdd-verify-action`) for Pull Request contract completeness checks.
-- [ ] `sdd-review` CLI command to generate cross-contract analytics and coverage heatmaps.
-- [ ] Support for decision trees and dependent contracts (`depends_on: FEAT-XXXX`).
+### Version 0.5.x — Interop, honest ledgers, atomicity and a real CLI (Released)
+
+- [x] **Behavioral skills interop** (`protocol/interop.md`): protocol precedence, "ask" routing through the Ambiguity Log, traceability anchor, no-trim rule and closing subordination.
+- [x] **Inferred Assumptions** (`AS-XX`): every inference the requirements agent makes is recorded and must be confirmed before approval.
+- [x] **Deterministic Loop ledger**: `sdd_step_loop` builds the map, claims items and records real outcomes; the simulated PASS was removed.
+- [x] **Honest telemetry**: `.sdd/metrics.json` and `.sdd/usage.json` are the only sources; the dashboard says "sin datos" instead of inventing figures.
+- [x] **Command line**: `sdd init/status/new/validate/next/report/approve/loop/graph/sync/doctor`, with `--json`, stable exit codes and no side effects on reads.
+- [x] **Atomic contracts**: mandatory User Story with a single goal plus a calibrated budget (`STORY_*`, `BUDGET_EXCEEDED`) with explicit waivers.
+- [x] **Neutral contract format**: English/Spanish section aliases, type from front-matter, contracts resolved by ID.
+- [x] **CI** (`.github/workflows/test.yml`): suite, 8-tool check, stdio handshake and clean-tree gate.
+- [x] **Structured run events**: `.sdd/runs/<ID>/events.ndjson` for reports and future analytics.
+- [x] **`depends_on` graph**: `sdd graph` orders execution and detects cycles; `sdd next` respects it.
+
+### Version 0.6.0 (Next)
+
+- [ ] `sdd split`: propose the cut of an oversized contract from `Entities Affected`.
+- [ ] Per-criterion invalidation: re-open only the items whose spec text changed.
+- [ ] `sdd-review`: cross-contract coverage heatmaps.
+- [ ] Publish the package (with the `sdd` binary) to npm.
 
 ### Ideas Backlog
 - [ ] Native integration with issue tracking systems (GitHub Issues, Linear, Jira).

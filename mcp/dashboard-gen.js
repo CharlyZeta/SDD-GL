@@ -256,6 +256,13 @@ function generateDashboard(customRoot, options = {}) {
 
   // Per-project usage view: identity, activity trend and session averages.
   const identity = getProjectIdentity(PROJECT_ROOT);
+  const projectVersion = (() => {
+    try {
+      return JSON.parse(fs.readFileSync(path.join(PROJECT_ROOT, 'package.json'), 'utf8')).version || '0.0.0';
+    } catch (error) {
+      return '0.0.0';
+    }
+  })();
   const activity = buildActivitySeries(usage.session_log);
   const activityMax = Math.max(1, ...activity.map(day => day.value));
   const callsPerSession = usage.sessions > 0 ? Math.round((usage.totals.calls / usage.sessions) * 10) / 10 : 0;
@@ -347,7 +354,7 @@ function generateDashboard(customRoot, options = {}) {
         </div>
         <div>
           <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-            SDD-GL <span class="text-xs px-2 py-0.5 rounded-full bg-sddCyan/10 text-sddCyan border border-sddCyan/30 font-mono">v0.4.0 Live</span>
+            SDD-GL <span class="text-xs px-2 py-0.5 rounded-full bg-sddCyan/10 text-sddCyan border border-sddCyan/30 font-mono">v${projectVersion} Live</span>
           </h1>
           <p class="text-xs text-gray-400">Spec-Driven Development · Gate / Loop & AC/DC Telemetry</p>
           <p class="text-[11px] text-gray-500 mt-0.5">
@@ -545,7 +552,7 @@ function generateDashboard(customRoot, options = {}) {
         <!-- PRESENT -->
         <div class="p-4 rounded-lg bg-sddCyan/5 border border-sddCyan/30 space-y-3">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-sddCyan uppercase tracking-wider">Presente (v0.4.0 Actual)</span>
+            <span class="text-xs font-bold text-sddCyan uppercase tracking-wider">Presente (v${projectVersion} Actual)</span>
             <span class="text-xs px-2 py-0.5 rounded bg-sddCyan/20 text-sddCyan font-semibold">En Producción</span>
           </div>
           <ul class="text-xs text-gray-200 space-y-2">
