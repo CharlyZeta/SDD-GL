@@ -70,9 +70,11 @@ Comandos:
   status                 Estado de todos los contratos y progreso del mapa
   new "<título>"         Crea un contrato nuevo (--type FEAT|FIX, --gate EXPRESS|STRICT)
   validate <ID>          Validación de Gate (checklist + contradicciones)
-  next                   Qué hacer ahora, según el estado del proyecto
+  next                   Qué hacer ahora (respeta dependencias)
   report <ID>            Informe de ejecución del contrato
   approve <ID> --yes     Aprueba el contrato (HO-Gate) con huella del spec
+  loop <ID>              Reclama el próximo ítem (--pass/--fail/--blocked para reportar)
+  graph                  Orden de ejecución según depends_on
   sync                   Verifica que cada agente exista en todas las plataformas
   doctor                 Diagnóstico de la instalación
 
@@ -301,6 +303,14 @@ function commandNext() {
   const status = callTool('sdd_get_status', {}, 'next', null);
   const contracts = status.contracts || [];
 
+  // Dependencies gate the suggestions: a contract is actionable only when every
+  // dependency is RESOLVED (or the dependency does not exist, which is reported).
+  const dependencyMap = new Map(contracts.map(contract => [contract.id, readDependencies(contract.id)]));
+  const blockingDependencies = contract => (dependencyMap.get(contract.id) || []).filter(dependency => {
+    const target = contracts.find(item => item.id === dependency);
+    return !target || target.status !== 'RESOLVED';
+  });
+
   const stalled = [];
   for (const contract of contracts) {
     const source = readContract(contract.id);
@@ -312,6 +322,9 @@ function commandNext() {
   const drafts = contracts.filter(contract => contract.status === 'DRAFT');
   const loops = contracts.filter(contract => contract.status === 'APPROVED');
   const resolved = contracts.filter(contract => contract.status === 'RESOLVED');
+
+  const actionable = contract => blockingDependencies(contract).length === 0;
+  const blocked = [...drafts, ...loops].filter(contract => !actionable(contract));
 
   const steps = [];
 
@@ -325,7 +338,7 @@ function commandNext() {
     }
   }
 
-  for (const contract of drafts) {
+  for (const contract of drafts.filter(actionable)) {
     steps.push({
       action: `Validar y aprobar ${contract.id}`,
       command: `sdd validate ${contract.id}`,
@@ -333,11 +346,19 @@ function commandNext() {
     });
   }
 
-  for (const contract of loops) {
+  for (const contract of loops.filter(actionable)) {
     steps.push({
       action: `Ejecutar el Loop de ${contract.id}`,
       command: `sdd loop ${contract.id}`,
       why: `${contract.progress.done}/${contract.progress.total} ítems del mapa`
+    });
+  }
+
+  for (const contract of blocked) {
+    steps.push({
+      action: `Esperar ${contract.id}`,
+      command: `sdd graph`,
+      why: `depende de ${blockingDependencies(contract).join(', ')}`
     });
   }
 
@@ -350,7 +371,7 @@ function commandNext() {
   }
 
   if (wantsJson) {
-    console.log(JSON.stringify({ next: steps, summary: { drafts: drafts.length, loops: loops.length, resolved: resolved.length } }, null, 2));
+    console.log(JSON.stringify({ next: steps, summary: { drafts: drafts.length, loops: loops.length, resolved: resolved.length, blocked: blocked.length } }, null, 2));
     return 0;
   }
 
@@ -744,6 +765,196 @@ function commandSync() {
 }
 
 // ---------------------------------------------------------------------------
+// Loop from the terminal and dependency graph
+// ---------------------------------------------------------------------------
+
+function readDependencies(contractId) {
+  const source = readContract(contractId);
+  if (!source) return [];
+
+  const frontMatter = source.text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (frontMatter) {
+    const line = frontMatter[1].match(/^\s*depends_on\s*:\s*(.+)$/im);
+    if (line) {
+      return line[1]
+        .replace(/[[\]]/g, ' ')
+        .split(/[,\s]+/)
+        .map(item => item.trim())
+        .filter(item => /^(?:FEAT|FIX)-\d+$/.test(item));
+    }
+  }
+
+  const section = source.text.match(/^##\s*(?:Depends On|Depende de)\s*\n([\s\S]*?)(?=\n##\s|$)/im);
+  if (section) {
+    return [...new Set([...section[1].matchAll(/\b(?:FEAT|FIX)-\d+\b/g)].map(match => match[0]))];
+  }
+
+  return [];
+}
+
+function buildDependencyGraph() {
+  const status = callTool('sdd_get_status', {}, 'graph', null);
+  const contracts = status.contracts || [];
+  const byId = new Map(contracts.map(contract => [contract.id, contract]));
+
+  const nodes = contracts.map(contract => ({
+    id: contract.id,
+    status: contract.status,
+    title: contract.title,
+    dependsOn: readDependencies(contract.id)
+  }));
+
+  const missing = [];
+  for (const node of nodes) {
+    node.dependsOn = node.dependsOn.filter(dependency => {
+      if (!byId.has(dependency)) {
+        missing.push(`${node.id} -> ${dependency}`);
+        return false;
+      }
+      return true;
+    });
+  }
+
+  // Kahn topological order; whatever remains belongs to a cycle.
+  const indegree = new Map(nodes.map(node => [node.id, node.dependsOn.length]));
+  const dependents = new Map(nodes.map(node => [node.id, []]));
+  for (const node of nodes) {
+    for (const dependency of node.dependsOn) dependents.get(dependency).push(node.id);
+  }
+
+  const queue = nodes.filter(node => indegree.get(node.id) === 0).map(node => node.id).sort();
+  const order = [];
+
+  while (queue.length > 0) {
+    const id = queue.shift();
+    order.push(id);
+    for (const dependent of dependents.get(id)) {
+      indegree.set(dependent, indegree.get(dependent) - 1);
+      if (indegree.get(dependent) === 0) queue.push(dependent);
+    }
+  }
+
+  const cyclic = nodes.map(node => node.id).filter(id => !order.includes(id));
+  const ready = nodes
+    .filter(node => node.status !== 'RESOLVED')
+    .filter(node => node.dependsOn.every(dependency => byId.get(dependency).status === 'RESOLVED'))
+    .map(node => node.id);
+
+  return { nodes, order, cyclic, missing, ready, byId };
+}
+
+function commandGraph() {
+  const graph = buildDependencyGraph();
+
+  if (wantsJson) {
+    console.log(JSON.stringify({
+      order: graph.order,
+      ready: graph.ready,
+      cyclic: graph.cyclic,
+      missing: graph.missing,
+      nodes: graph.nodes
+    }, null, 2));
+    return graph.cyclic.length > 0 || graph.missing.length > 0 ? 1 : 0;
+  }
+
+  console.log('Orden sugerido (dependencias primero):\n');
+  for (const id of graph.order) {
+    const node = graph.nodes.find(item => item.id === id);
+    const deps = node.dependsOn.length > 0 ? ` <- ${node.dependsOn.join(', ')}` : '';
+    console.log(`  ${id.padEnd(11)} ${node.status.padEnd(9)}${deps}`);
+  }
+
+  if (graph.ready.length > 0) console.log(`\nListos para avanzar: ${graph.ready.join(', ')}`);
+  if (graph.cyclic.length > 0) console.log(`\nCiclo de dependencias: ${graph.cyclic.join(', ')}`);
+  if (graph.missing.length > 0) console.log(`\nDependencias inexistentes: ${graph.missing.join(', ')}`);
+  if (graph.ready.length === 0 && graph.cyclic.length === 0) {
+    console.log('\nNada listo: todo depende de trabajo pendiente o está resuelto.');
+  }
+
+  return graph.cyclic.length > 0 || graph.missing.length > 0 ? 1 : 0;
+}
+
+function commandLoop() {
+  const contractId = positional[1];
+  if (!contractId) fail('falta el ID del contrato (sdd loop <ID>)');
+
+  const wantsPass = args.includes('--pass');
+  const wantsFail = args.includes('--fail');
+  const blockedReason = flagValue('--blocked');
+  const evidence = flagValue('--evidence') || '';
+
+  if (blockedReason) {
+    const result = callTool('sdd_log_ambiguity', {
+      contract_id: contractId,
+      item_id: flagValue('--item') || 'auto',
+      reason: blockedReason
+    }, 'loop', contractId);
+
+    if (result.error) fail(result.error);
+    if (wantsJson) {
+      console.log(JSON.stringify(result, null, 2));
+      return 0;
+    }
+    console.log(`Ambiguedad registrada en ${contractId}. El contrato volvio a DRAFT/GATE.`);
+    console.log(`   motivo: ${blockedReason}`);
+    return 0;
+  }
+
+  if (wantsPass || wantsFail) {
+    const result = callTool('sdd_step_loop', {
+      contract_id: contractId,
+      item_id: flagValue('--item') || 'auto',
+      result: wantsPass ? 'PASS' : 'FAIL',
+      evidence: evidence || '(sin evidencia)'
+    }, 'loop', contractId);
+
+    if (result.error) fail(result.error);
+
+    if (wantsJson) {
+      console.log(JSON.stringify(result, null, 2));
+      return result.item_status === 'PASS' ? 0 : 1;
+    }
+
+    const icon = result.item_status === 'PASS' ? 'OK' : 'FALLA';
+    console.log(`[${icon}] ${result.item_id}: ${result.previous_status} -> ${result.new_status} (${result.item_status})`);
+    console.log(`   evidencia: ${evidence || '-'}`);
+    console.log(`   log: ${result.audit_log_path || '-'}`);
+    return result.item_status === 'PASS' ? 0 : 1;
+  }
+
+  // Default: claim the next item and hand its context to the agent.
+  const claim = callTool('sdd_step_loop', {
+    contract_id: contractId,
+    item_id: flagValue('--item') || 'auto'
+  }, 'loop', contractId);
+
+  if (claim.error) fail(claim.error);
+
+  if (claim.item_status !== 'IN_PROGRESS') {
+    if (wantsJson) {
+      console.log(JSON.stringify(claim, null, 2));
+      return 1;
+    }
+    console.log(`No se pudo reclamar un item: ${claim.reason || claim.item_status}`);
+    return 1;
+  }
+
+  if (wantsJson) {
+    console.log(JSON.stringify(claim, null, 2));
+    return 0;
+  }
+
+  console.log(`>> ${contractId} - item reclamado: ${claim.item_id} (${claim.layer})`);
+  console.log(`   criterio: ${claim.criterion || '(ver el contrato)'}`);
+  console.log(`   agente: ${claim.agent} - test: ${claim.test_id}`);
+  console.log(`\n   ${claim.next_action}`);
+  console.log(`\n   Al terminar:  sdd loop ${contractId} --pass --evidence "resultado"`);
+  console.log(`   Si falla:     sdd loop ${contractId} --fail --evidence "salida"`);
+  console.log(`   Si bloquea:   sdd loop ${contractId} --blocked "que decision falta"`);
+  return 0;
+}
+
+// ---------------------------------------------------------------------------
 // Dispatch
 // ---------------------------------------------------------------------------
 
@@ -762,6 +973,8 @@ const commands = {
   report: commandReport,
   approve: commandApprove,
   sync: commandSync,
+  loop: commandLoop,
+  graph: commandGraph,
   init: commandInit,
   doctor: commandDoctor,
   tools: () => {

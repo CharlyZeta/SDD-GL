@@ -465,3 +465,129 @@ describe('CLI — sync check across platforms', () => {
     }
   });
 });
+
+describe('CLI — loop from the terminal', () => {
+  function approvedProject() {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-cli-loop-'));
+    run(['init'], { cwd: root });
+    run(['new', 'Corregir el redondeo', '--type', 'FIX'], { cwd: root });
+    run(['approve', 'FIX-0001', '--yes'], { cwd: root });
+    return root;
+  }
+
+  function contractText(root) {
+    return fs.readFileSync(path.join(root, 'contracts', 'FIX-0001.md'), 'utf8');
+  }
+
+  test('loop claims the next item and persists the in-progress marker', () => {
+    const root = approvedProject();
+    try {
+      const result = run(['loop', 'FIX-0001', '--json'], { cwd: root });
+      const data = JSON.parse(result.stdout);
+
+      assert.strictEqual(result.code, 0);
+      assert.strictEqual(data.item_status, 'IN_PROGRESS');
+      assert.match(contractText(root), /\| ⏳|⏳\s*$/m);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test('loop --pass records the result with evidence', () => {
+    const root = approvedProject();
+    try {
+      run(['loop', 'FIX-0001'], { cwd: root });
+      const result = run(['loop', 'FIX-0001', '--pass', '--evidence', '27 verdes', '--json'], { cwd: root });
+      const data = JSON.parse(result.stdout);
+
+      assert.strictEqual(result.code, 0);
+      assert.strictEqual(data.item_status, 'PASS');
+      assert.match(contractText(root), /functional-tests:FIX-0001-main \| tester \| ✅/);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test('loop --fail returns exit 1', () => {
+    const root = approvedProject();
+    try {
+      run(['loop', 'FIX-0001'], { cwd: root });
+      const result = run(['loop', 'FIX-0001', '--fail', '--evidence', 'sigue fallando'], { cwd: root });
+      assert.strictEqual(result.code, 1);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('CLI — dependency graph', () => {
+  function writeGraphProject(root, contracts) {
+    fs.mkdirSync(path.join(root, 'contracts'), { recursive: true });
+    for (const [id, status, dependsOn] of contracts) {
+      const front = dependsOn && dependsOn.length > 0 ? `---\ndepends_on: ${dependsOn.join(', ')}\n---\n` : '';
+      fs.writeFileSync(path.join(root, 'contracts', `${id}.md`), `${front}# CONTRACT: ${id}
+# ID: ${id}
+# Status: ${status}
+# Mode: GATE
+# Gate-Mode: EXPRESS
+`, 'utf8');
+    }
+  }
+
+  test('dependencies come before their dependents', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-cli-graph-'));
+    try {
+      writeGraphProject(root, [
+        ['FEAT-9801', 'DRAFT', []],
+        ['FEAT-9802', 'DRAFT', ['FEAT-9801']]
+      ]);
+
+      const result = run(['graph', '--json'], { cwd: root });
+      const data = JSON.parse(result.stdout);
+
+      assert.strictEqual(result.code, 0);
+      assert.deepStrictEqual(data.order, ['FEAT-9801', 'FEAT-9802']);
+      assert.deepStrictEqual(data.ready, ['FEAT-9801']);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test('a cycle is reported with exit code 1', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-cli-cycle-'));
+    try {
+      writeGraphProject(root, [
+        ['FEAT-9803', 'DRAFT', ['FEAT-9804']],
+        ['FEAT-9804', 'DRAFT', ['FEAT-9803']]
+      ]);
+
+      const result = run(['graph', '--json'], { cwd: root });
+      const data = JSON.parse(result.stdout);
+
+      assert.strictEqual(result.code, 1);
+      assert.deepStrictEqual(data.cyclic.sort(), ['FEAT-9803', 'FEAT-9804']);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test('next does not suggest a contract whose dependency is pending', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-cli-next-dep-'));
+    try {
+      writeGraphProject(root, [
+        ['FEAT-9805', 'DRAFT', []],
+        ['FEAT-9806', 'APPROVED', ['FEAT-9805']]
+      ]);
+
+      const result = run(['next', '--json'], { cwd: root });
+      const data = JSON.parse(result.stdout);
+
+      const commands = data.next.map(step => step.command).join(' ');
+      assert.match(commands, /validate FEAT-9805/);
+      assert.ok(!/loop FEAT-9806/.test(commands), 'the dependent contract must not be suggested');
+      assert.ok(data.next.some(step => /Esperar FEAT-9806/.test(step.action)));
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+});

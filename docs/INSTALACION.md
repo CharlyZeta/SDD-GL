@@ -124,7 +124,9 @@ npx sdd doctor                 # diagnóstico de la instalación (OK / WARN / FA
 npx sdd status                 # contratos, estado y progreso del mapa
 npx sdd new "notificaciones por email" --type FEAT
 npx sdd validate FEAT-0001     # Gate + contradicciones + atomicidad
-npx sdd next                   # qué hacer ahora
+npx sdd next                   # qué hacer ahora (respeta depends_on)
+npx sdd loop FEAT-0001         # reclama el próximo ítem del mapa
+npx sdd graph                  # orden de ejecución por dependencias
 npx sdd report FEAT-0001       # informe de ejecución (mapa + eventos + métricas)
 ```
 

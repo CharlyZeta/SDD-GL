@@ -362,7 +362,9 @@ The same core is available as a CLI, so SDD-GL works in a terminal or in CI:
 | `sdd status` | every contract with status, mode and Completion Map progress |
 | `sdd new "story"` | creates a contract (`--type FEAT\|FIX`, `--gate EXPRESS\|STRICT`) |
 | `sdd validate <ID>` | Gate checklist + BR↔AC contradictions + atomicity (`STORY_*`, `BUDGET_EXCEEDED`) |
-| `sdd next` | what to do now, based on the project state |
+| `sdd next` | what to do now, honouring `depends_on` |
+| `sdd loop <ID>` | claims the next item and hands its context to the agent (`--pass`/`--fail`/`--blocked` to report) |
+| `sdd graph` | execution order from `depends_on`, cycles and missing dependencies |
 | `sdd approve <ID> --yes` | HO-Gate from the terminal: records approver, timestamp and spec hash |
 | `sdd sync` | checks that every agent exists in all platform adapters |
 | `sdd report <ID>` | execution report: map, run events, metrics and verdict |
