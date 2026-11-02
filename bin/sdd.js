@@ -72,6 +72,8 @@ Comandos:
   validate <ID>          Validación de Gate (checklist + contradicciones)
   next                   Qué hacer ahora, según el estado del proyecto
   report <ID>            Informe de ejecución del contrato
+  approve <ID> --yes     Aprueba el contrato (HO-Gate) con huella del spec
+  sync                   Verifica que cada agente exista en todas las plataformas
   doctor                 Diagnóstico de la instalación
 
 Opciones:
@@ -607,6 +609,141 @@ function commandDoctor() {
 }
 
 // ---------------------------------------------------------------------------
+// Approve (HO-Gate from the terminal)
+// ---------------------------------------------------------------------------
+
+function commandApprove() {
+  const contractId = positional[1];
+  if (!contractId) fail('falta el ID del contrato (sdd approve <ID>)');
+
+  const source = readContract(contractId);
+  if (!source) fail(`contrato ${contractId} no encontrado`);
+
+  const validation = callTool('sdd_validate_gate', { contract_id: contractId }, 'approve', contractId);
+  if (validation.status !== 'READY_FOR_APPROVAL') {
+    if (!wantsJson) {
+      console.log(`⛔ ${contractId} no está listo para aprobar (${validation.status}).`);
+      for (const issue of validation.missing || []) console.log(`  - ${issue}`);
+    } else {
+      console.log(JSON.stringify({ contract_id: contractId, approved: false, validation }, null, 2));
+    }
+    return 1;
+  }
+
+  // Explicit confirmation: the CLI never approves silently.
+  if (!args.includes('--yes')) {
+    if (wantsJson) {
+      console.log(JSON.stringify({ contract_id: contractId, approved: false, reason: 'confirmation required (--yes)' }, null, 2));
+      return 2;
+    }
+    fail('la aprobación requiere confirmación explícita: agregá --yes');
+  }
+
+  const crypto = require('node:crypto');
+
+  // Hash only the spec body: approval lines and mode/status headers are excluded,
+  // so re-approving the same content produces the same fingerprint.
+  const canonical = source.text
+    .split(/\r?\n/)
+    .filter(line => !/^#\s*(Status|Mode|Approved-By|Approved-At|Approved-Hash):/.test(line))
+    .join('\n')
+    .trim();
+
+  const hash = crypto.createHash('sha256').update(canonical).digest('hex').slice(0, 12);
+  const approvedBy = (() => {
+    try {
+      const { execSync } = require('node:child_process');
+      const name = execSync('git config user.name', { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+      const email = execSync('git config user.email', { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+      if (name) return email ? `${name} <${email}>` : name;
+    } catch (error) {
+      // Not a git repository: fall back to the OS user below.
+    }
+
+    try {
+      return require('node:os').userInfo().username;
+    } catch (error) {
+      return 'desconocido';
+    }
+  })();
+
+  let text = source.text
+    .replace(/^#\s*Status:\s*DRAFT\s*$/m, '# Status: APPROVED')
+    .replace(/^#\s*Mode:\s*GATE\s*$/m, '# Mode: LOOP')
+    .replace(/^#\s*Approved-(By|At|Hash):.*$\r?\n?/gm, '');
+
+  const header = `# Approved-By: ${approvedBy}\n# Approved-At: ${new Date().toISOString()}\n# Approved-Hash: ${hash}`;
+  text = text.replace(/^(#\s*Gate-Mode:.*)$/m, `$1\n${header}`);
+
+  fs.writeFileSync(source.path, text, 'utf8');
+
+  if (wantsJson) {
+    console.log(JSON.stringify({ contract_id: contractId, approved: true, approved_by: approvedBy, hash }, null, 2));
+    return 0;
+  }
+
+  console.log(`✅ ${contractId} aprobado — Status: APPROVED · Mode: LOOP`);
+  console.log(`   por: ${approvedBy}`);
+  console.log(`   hash del spec: ${hash}`);
+  console.log(`\nSiguiente paso: sdd loop ${contractId}`);
+  return 0;
+}
+
+// ---------------------------------------------------------------------------
+// Sync check: the same agents must exist for every platform adapter
+// ---------------------------------------------------------------------------
+
+function commandSync() {
+  const skillsDir = path.join(ROOT, '.agents', 'skills');
+  const agentsDir = path.join(ROOT, '.claude', 'agents');
+  const issues = [];
+  const pairs = [];
+
+  const skillDirs = fs.existsSync(skillsDir)
+    ? fs.readdirSync(skillsDir, { withFileTypes: true }).filter(entry => entry.isDirectory()).map(entry => entry.name)
+    : [];
+
+  const agentFiles = fs.existsSync(agentsDir)
+    ? fs.readdirSync(agentsDir).filter(name => name.endsWith('.md'))
+    : [];
+
+  // Only agent skills have a Claude Code counterpart; orchestrator skills do not.
+  const agentSkills = skillDirs.filter(name => /^sdd-.*-agent$/.test(name));
+
+  for (const skill of agentSkills) {
+    const expected = `${skill.replace(/^sdd-/, '')}.md`;
+    if (!agentFiles.includes(expected)) {
+      issues.push(`falta .claude/agents/${expected} para .agents/skills/${skill}`);
+    } else {
+      pairs.push({ skill, agent: expected });
+    }
+  }
+
+  for (const agent of agentFiles) {
+    const expectedSkill = `sdd-${agent.replace(/\.md$/, '')}`;
+    if (!skillDirs.includes(expectedSkill)) {
+      issues.push(`falta .agents/skills/${expectedSkill} para .claude/agents/${agent}`);
+    }
+  }
+
+  const payload = { root: ROOT, pairs: pairs.length, issues };
+
+  if (wantsJson) {
+    console.log(JSON.stringify(payload, null, 2));
+    return issues.length === 0 ? 0 : 1;
+  }
+
+  if (issues.length === 0) {
+    console.log(`✅ ${pairs.length} par(es) de agente sincronizados entre .agents/skills y .claude/agents.`);
+  } else {
+    console.log('⛔ Diferencias entre plataformas:');
+    for (const issue of issues) console.log(`  - ${issue}`);
+  }
+
+  return issues.length === 0 ? 0 : 1;
+}
+
+// ---------------------------------------------------------------------------
 // Dispatch
 // ---------------------------------------------------------------------------
 
@@ -623,6 +760,8 @@ const commands = {
   validate: commandValidate,
   next: commandNext,
   report: commandReport,
+  approve: commandApprove,
+  sync: commandSync,
   init: commandInit,
   doctor: commandDoctor,
   tools: () => {

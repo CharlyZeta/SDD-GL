@@ -363,6 +363,8 @@ The same core is available as a CLI, so SDD-GL works in a terminal or in CI:
 | `sdd new "story"` | creates a contract (`--type FEAT\|FIX`, `--gate EXPRESS\|STRICT`) |
 | `sdd validate <ID>` | Gate checklist + BR↔AC contradictions + atomicity (`STORY_*`, `BUDGET_EXCEEDED`) |
 | `sdd next` | what to do now, based on the project state |
+| `sdd approve <ID> --yes` | HO-Gate from the terminal: records approver, timestamp and spec hash |
+| `sdd sync` | checks that every agent exists in all platform adapters |
 | `sdd report <ID>` | execution report: map, run events, metrics and verdict |
 
 Every command accepts `--json` (for CI) and `--root <dir>`. Exit codes are stable: `0` clean, `1` findings, `2` usage error. Read-only commands never create files in the project.

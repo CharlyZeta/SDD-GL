@@ -819,7 +819,7 @@ ${args.intent || '[Inferred from user description]'}
 - [x] Ninguno
 
 ## Ambiguity Log
-- [ ]
+- [x] Ninguno
 
 ## Completion Map
 # (generado por el Loop al transicionar a Mode: LOOP)

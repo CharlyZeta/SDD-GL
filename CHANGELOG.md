@@ -107,3 +107,5 @@
 - **`sdd doctor`**: read-only diagnosis (Node version, contracts, config, unreadable headers, interrupted items, MCP tools, agent frontmatter) with OK / WARN / FAIL and exit code 1 on failures.
 - **Configurable layers**: `.sdd/config.json` can declare `layers`, and the metrics ledger, Completion Map builder and dashboard adapt to them; the four standard layers remain the default.
 - **Tests**: CLI now covers init, doctor and usage attribution (18), dashboard covers pending and origin panels (21).
+- **`sdd approve <ID> --yes`**: HO-Gate from the terminal. Refuses without explicit confirmation, validates the contract first and writes `Status: APPROVED`, `Mode: LOOP`, plus `Approved-By`, `Approved-At` and a SHA-256 fingerprint of the spec body (approval lines excluded, so re-approving identical content yields the same hash).
+- **`sdd sync`**: checks that every agent skill in `.agents/skills/` has its `.claude/agents/` counterpart and vice versa, reporting drift with exit code 1. It verifies parity instead of generating files, because the two adapters are intentionally written in different languages.

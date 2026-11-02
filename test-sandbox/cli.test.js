@@ -337,3 +337,131 @@ describe('CLI — usage attribution', () => {
     }
   });
 });
+
+describe('CLI — approve (HO-Gate)', () => {
+  function readyProject() {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-cli-approve-'));
+    const contractsDir = path.join(root, 'contracts');
+    fs.mkdirSync(contractsDir, { recursive: true });
+    fs.writeFileSync(path.join(contractsDir, 'FIX-9701.md'), `# CONTRACT: Listo para aprobar
+# ID: FIX-9701
+# Status: DRAFT
+# Mode: GATE
+# Gate-Mode: EXPRESS
+
+## User Story
+- Como: usuario
+- Quiero: corregir el redondeo
+- Para: cobrar lo mostrado
+
+## Pasos
+1. Uno.
+2. Dos.
+3. Tres.
+
+## Criterios de Aceptación
+- AC-001: GIVEN a WHEN b THEN c
+
+## Registro de Ambigüedades
+- [x] Ninguna
+`, 'utf8');
+    return root;
+  }
+
+  test('approve refuses without explicit confirmation and does not touch the file', () => {
+    const root = readyProject();
+    try {
+      const before = fs.readFileSync(path.join(root, 'contracts', 'FIX-9701.md'), 'utf8');
+      const result = run(['approve', 'FIX-9701'], { cwd: root });
+
+      assert.strictEqual(result.code, 2);
+      assert.strictEqual(fs.readFileSync(path.join(root, 'contracts', 'FIX-9701.md'), 'utf8'), before);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test('approve --yes writes the approval fingerprint', () => {
+    const root = readyProject();
+    try {
+      const result = run(['approve', 'FIX-9701', '--yes', '--json'], { cwd: root });
+      assert.strictEqual(result.code, 0);
+
+      const data = JSON.parse(result.stdout);
+      assert.strictEqual(data.approved, true);
+      assert.match(data.hash, /^[0-9a-f]{12}$/);
+
+      const text = fs.readFileSync(path.join(root, 'contracts', 'FIX-9701.md'), 'utf8');
+      assert.match(text, /^# Status: APPROVED$/m);
+      assert.match(text, /^# Mode: LOOP$/m);
+      assert.match(text, /^# Approved-By: .+$/m);
+      assert.match(text, /^# Approved-At: .+$/m);
+      assert.match(text, new RegExp(`^# Approved-Hash: ${data.hash}$`, 'm'));
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test('approve refuses an incomplete contract', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-cli-approve-bad-'));
+    try {
+      fs.mkdirSync(path.join(root, 'contracts'), { recursive: true });
+      fs.writeFileSync(path.join(root, 'contracts', 'FEAT-9702.md'), `# CONTRACT: Incompleto
+# ID: FEAT-9702
+# Status: DRAFT
+# Mode: GATE
+# Gate-Mode: STRICT
+
+## Main Flow
+1. Un paso.
+`, 'utf8');
+
+      const result = run(['approve', 'FEAT-9702', '--yes'], { cwd: root });
+
+      assert.strictEqual(result.code, 1);
+      assert.match(fs.readFileSync(path.join(root, 'contracts', 'FEAT-9702.md'), 'utf8'), /^# Status: DRAFT$/m);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('CLI — sync check across platforms', () => {
+  function makePair(root) {
+    fs.mkdirSync(path.join(root, '.agents', 'skills', 'sdd-coder-agent'), { recursive: true });
+    fs.writeFileSync(path.join(root, '.agents', 'skills', 'sdd-coder-agent', 'SKILL.md'), '---\nname: sdd-coder-agent\n---\n', 'utf8');
+    fs.mkdirSync(path.join(root, '.claude', 'agents'), { recursive: true });
+    fs.writeFileSync(path.join(root, '.claude', 'agents', 'coder-agent.md'), '---\nname: coder-agent\n---\n', 'utf8');
+  }
+
+  test('a matching pair reports no drift', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-cli-sync-'));
+    try {
+      makePair(root);
+      const result = run(['sync', '--json'], { cwd: root });
+      const data = JSON.parse(result.stdout);
+
+      assert.strictEqual(result.code, 0);
+      assert.strictEqual(data.issues.length, 0);
+      assert.strictEqual(data.pairs, 1);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test('a missing adapter is reported as drift', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-cli-sync-drift-'));
+    try {
+      fs.mkdirSync(path.join(root, '.agents', 'skills', 'sdd-tester-agent'), { recursive: true });
+      fs.writeFileSync(path.join(root, '.agents', 'skills', 'sdd-tester-agent', 'SKILL.md'), '---\nname: x\n---\n', 'utf8');
+
+      const result = run(['sync', '--json'], { cwd: root });
+      const data = JSON.parse(result.stdout);
+
+      assert.strictEqual(result.code, 1);
+      assert.ok(data.issues.some(issue => /tester-agent/.test(issue)));
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
