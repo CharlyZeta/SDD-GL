@@ -40,6 +40,10 @@ describe('Neutral format — sections in Spanish', () => {
 # Mode: GATE
 # Gate-Mode: EXPRESS
 
+## User Story
+- Como: usuario
+- Quiero: resolver el caso
+- Para: evitar el error
 ## Pasos
 1. Se reproduce el error.
 2. Se corrigen las líneas afectadas.
@@ -67,6 +71,10 @@ describe('Neutral format — sections in Spanish', () => {
 # Mode: GATE
 # Gate-Mode: STRICT
 
+## User Story
+- Como: usuario
+- Quiero: resolver el caso
+- Para: evitar el error
 ### Main Flow
 1. One step.
 2. Two steps.
@@ -101,6 +109,10 @@ describe('Neutral format — type and file naming', () => {
 # Mode: GATE
 # Gate-Mode: EXPRESS
 
+## User Story
+- Como: usuario
+- Quiero: resolver el caso
+- Para: evitar el error
 ## Pasos
 1. Uno.
 2. Dos.
@@ -131,6 +143,10 @@ type: fix
 # Mode: GATE
 # Gate-Mode: EXPRESS
 
+## User Story
+- Como: usuario
+- Quiero: resolver el caso
+- Para: evitar el error
 ## Pasos
 1. Uno.
 2. Dos.
@@ -158,6 +174,10 @@ type: fix
 # Mode: GATE
 # Gate-Mode: EXPRESS
 
+## User Story
+- Como: usuario
+- Quiero: resolver el caso
+- Para: evitar el error
 ## Pasos
 1. Uno.
 2. Dos.

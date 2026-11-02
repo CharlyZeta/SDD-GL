@@ -347,3 +347,31 @@ describe('FEAT-0015 — Anti-fabrication guards', () => {
     assert.match(result.reason, /Recursive verification/i);
   });
 });
+
+describe('Structured run events (append-only NDJSON)', () => {
+  test('claim and result are recorded as machine-readable events', () => {
+    resetEnv();
+    writeContract('FEAT-9020', 'APPROVED', 'LOOP', [
+      '# BR-001 | functional | unit-test:FEAT-9020-br001 | tester | ❌'
+    ]);
+
+    handleToolCall('sdd_step_loop', { contract_id: 'FEAT-9020', item_id: 'BR-001' });
+    handleToolCall('sdd_step_loop', {
+      contract_id: 'FEAT-9020',
+      item_id: 'BR-001',
+      result: 'PASS',
+      evidence: 'assertion green'
+    });
+
+    const eventsFile = path.join(runsDir, 'FEAT-9020', 'events.ndjson');
+    assert.ok(fs.existsSync(eventsFile), 'events.ndjson must exist');
+
+    const events = fs.readFileSync(eventsFile, 'utf8').trim().split('\n').map(line => JSON.parse(line));
+    assert.strictEqual(events.length, 2);
+    assert.strictEqual(events[0].event, 'CLAIM');
+    assert.strictEqual(events[0].item, 'BR-001');
+    assert.strictEqual(events[1].event, 'RESULT');
+    assert.strictEqual(events[1].result, 'PASS');
+    assert.ok(events[1].ts, 'every event carries a timestamp');
+  });
+});

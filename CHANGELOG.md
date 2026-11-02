@@ -83,3 +83,15 @@
 
 
 
+
+## [0.5.1] — 2026-11-02
+
+### Added — neutral format, CLI, atomicity and per-project usage
+
+- **Neutral contract format**: section aliases (English and Spanish, including `## Pasos` and `## Reproduction Steps`), numbered steps written as lists or headings, contract type resolved from front-matter or ID instead of a hardcoded prefix, and contracts located by ID so campaign-style file names work. A valid FIX is no longer rejected for being written in Spanish.
+- **Read-only tools never write**: `ensureDirs` was split so only write paths create `contracts/` or `.sdd/`; telemetry does not create the ledger in an uninitialized project either.
+- **CLI (`sdd`)**: `status`, `new`, `validate`, `next` and `report`, with `--json`, `--root` and stable exit codes (0 clean / 1 findings / 2 usage). Read-only commands have no side effects.
+- **Atomicity at the Gate**: a required `## User Story` with a single goal (`STORY_MISSING`, `STORY_MULTI_GOAL`) and a calibrated size budget (`BUDGET_EXCEEDED`: 7 BR / 8 AC / 5 AF / 9 steps), with explicit `STORY-OK` / `BUDGET-OK` waivers. Checks apply only to DRAFT contracts, so resolved work is never invalidated retroactively.
+- **Per-project usage in the dashboard**: project identity (name, branch, remote) in the header, session/ invocation /calls-per-session cards, last activity and a 14-day activity chart, all from the local ledger.
+- **Structured run events**: `.sdd/runs/<ID>/events.ndjson` (append-only, one JSON object per line) next to the human-readable logs; `sdd report` reads it to build the execution report.
+- **Tests**: neutral-format (7), atomicity (8), CLI (13), plus session-log and run-event assertions in the existing suites.

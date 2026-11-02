@@ -352,3 +352,39 @@ describe('FEAT-0012 isolation — showcase mode', () => {
     }
   });
 });
+
+describe('Dashboard per project (FEAT-0008 follow-up)', () => {
+  test('the dashboard shows the project identity and per-project usage', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-dash-project-'));
+    try {
+      fs.mkdirSync(path.join(root, 'contracts'), { recursive: true });
+      fs.mkdirSync(path.join(root, '.sdd'), { recursive: true });
+      fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({ name: 'checkout-service' }), 'utf8');
+
+      const now = new Date().toISOString();
+      fs.writeFileSync(path.join(root, '.sdd', 'usage.json'), JSON.stringify({
+        schema_version: 1,
+        first_seen: now,
+        last_updated: now,
+        sessions: 2,
+        session_log: [
+          { started_at: now, client: 'claude-code@2.0.1', calls: 3, last_call_at: now },
+          { started_at: now, client: 'cursor@1.7.4', calls: 2, last_call_at: now }
+        ],
+        clients: { 'claude-code@2.0.1': 1, 'cursor@1.7.4': 1 },
+        tools: { sdd_step_loop: 5 },
+        totals: { calls: 5, errors: 0 }
+      }), 'utf8');
+
+      const result = generateDashboard(root);
+      const html = fs.readFileSync(result.path, 'utf8');
+
+      assert.match(html, /checkout-service/);
+      assert.match(html, /Uso local del MCP — checkout-service/);
+      assert.match(html, /Actividad de los últimos 14 días/);
+      assert.match(html, /Sesiones/);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+});

@@ -36,6 +36,11 @@ const READY_FIX = `# CONTRACT: Algo roto
 # Mode: GATE
 # Gate-Mode: EXPRESS
 
+## User Story
+- Como: usuario
+- Quiero: resolver el caso
+- Para: evitar el error
+
 ## Pasos
 1. Uno.
 2. Dos.
@@ -57,6 +62,11 @@ const INCOMPLETE_FEAT = `# CONTRACT: Algo grande
 ## Intent
 Falta casi todo.
 
+## User Story
+- Como: usuario
+- Quiero: resolver el caso
+- Para: evitar el error
+
 ## Main Flow
 1. Un solo paso.
 
@@ -74,6 +84,11 @@ before(() => {
 # Status: RESOLVED
 # Mode: LOOP
 # Gate-Mode: EXPRESS
+
+## User Story
+- Como: usuario
+- Quiero: resolver el caso
+- Para: evitar el error
 
 ## Main Flow
 1. Uno.

@@ -18,6 +18,11 @@ Legible para el humano en modo Gate, parseable por el Loop para inferir criterio
 <!-- Qué problema resuelve. Una o dos oraciones. -->
 <!-- El Loop no lee esta sección para inferir criterios. -->
 
+## User Story
+- Como: [quién]
+- Quiero: [un solo objetivo]
+- Para: [beneficio esperado]
+
 ## Use Case
 **Actor:**
 **Goal:**
@@ -61,6 +66,32 @@ Si no hay inferencias relevantes: `- [x] Ninguno`
 # generated: [timestamp]
 # [nombre]|[test-id]|[agente]|[status]
 ```
+
+---
+
+## Atomicidad del contrato
+
+Un contrato es **una historia, un objetivo, un entregable**.
+
+| Regla | Código de Gate |
+|---|---|
+| Debe existir `## User Story` con `Como / Quiero / Para` | `STORY_MISSING` |
+| El `Quiero` declara un solo objetivo (dos infinitivos unidos por conector → dos objetivos) | `STORY_MULTI_GOAL` |
+| Presupuesto: ≤7 BR, ≤8 AC, ≤5 AF, ≤9 pasos | `BUDGET_EXCEEDED` |
+
+Los chequeos de atomicidad aplican **solo a contratos en `DRAFT`**: un contrato ya aprobado o
+resuelto no se invalida retroactivamente.
+
+### Waivers
+
+Una excepción se registra en el Ambiguity Log con motivo no vacío; sin motivo, el waiver no vale:
+
+```
+- [x] STORY-OK: [por qué este contrato no lleva historia]
+- [x] BUDGET-OK: [por qué excede el presupuesto]
+```
+
+La historia **no genera ítems** en el Completion Map: el mapa se infiere de Main Flow, AF, BR y AC.
 
 ---
 

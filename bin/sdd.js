@@ -108,19 +108,45 @@ function parseMap(text) {
 
 function readRunLogs(contractId) {
   const runsDir = path.join(ROOT, '.sdd', 'runs');
-  if (!fs.existsSync(runsDir)) return { files: [], entries: [] };
+  if (!fs.existsSync(runsDir)) return { files: [], entries: [], audits: [] };
 
   const dir = path.join(runsDir, contractId);
   const files = [];
-  const entries = [];
 
   if (fs.existsSync(dir)) {
     for (const name of fs.readdirSync(dir)) {
-      const full = path.join(dir, name);
-      if (!fs.statSync(full).isFile()) continue;
-      files.push(name);
+      if (fs.statSync(path.join(dir, name)).isFile()) files.push(name);
+    }
+  }
 
-      const content = fs.readFileSync(full, 'utf8');
+  // Structured ledger first (append-only NDJSON); markdown logs are the fallback.
+  const eventsFile = path.join(dir, 'events.ndjson');
+  let entries = [];
+
+  if (fs.existsSync(eventsFile)) {
+    entries = fs.readFileSync(eventsFile, 'utf8')
+      .split('\n')
+      .filter(Boolean)
+      .map(line => {
+        try {
+          return JSON.parse(line);
+        } catch (error) {
+          return null;
+        }
+      })
+      .filter(Boolean)
+      .map(event => ({
+        file: 'events.ndjson',
+        event: event.event || 'RESULT',
+        item: event.item || null,
+        layer: event.layer || null,
+        result: event.result || null,
+        timestamp: event.ts || null
+      }));
+  } else if (files.length > 0) {
+    for (const name of files) {
+      if (name === 'events.ndjson') continue;
+      const content = fs.readFileSync(path.join(dir, name), 'utf8');
       const pick = key => {
         const match = content.match(new RegExp(`^#\\s*${key}:\\s*(.*)$`, 'm'));
         return match ? match[1].trim() : null;

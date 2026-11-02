@@ -47,6 +47,11 @@ function writeContract(id, options = {}) {
 ## Intent
 Fixture contract for FEAT-0007.
 
+## User Story
+- Como: revisor
+- Quiero: validar un contrato de prueba
+- Para: ejercitar el ledger
+
 ## Use Case
 **Actor:** Tester
 **Goal:** Exercise the ledger.

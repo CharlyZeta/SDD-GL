@@ -50,13 +50,18 @@
             SDD-GL <span class="text-xs px-2 py-0.5 rounded-full bg-sddCyan/10 text-sddCyan border border-sddCyan/30 font-mono">v0.4.0 Live</span>
           </h1>
           <p class="text-xs text-gray-400">Spec-Driven Development · Gate / Loop & AC/DC Telemetry</p>
+          <p class="text-[11px] text-gray-500 mt-0.5">
+            Proyecto: <span class="text-gray-300 font-medium">@sdd-gl/mcp-server</span>
+            · rama <span class="text-gray-300 font-mono">main</span>
+            · <span class="text-gray-400 font-mono">https://github.com/CharlyZeta/SDD-GL</span>
+          </p>
         </div>
       </div>
 
       <div class="flex items-center space-x-4">
         <div class="flex items-center text-xs text-gray-400 bg-sddCard/80 px-3 py-1.5 rounded-md border border-sddBorder">
           <span class="w-2 h-2 rounded-full bg-sddEmerald animate-pulse mr-2"></span>
-          Última actualización: <span class="text-gray-200 font-mono ml-1.5">2026-10-22 22:33:08 UTC</span>
+          Última actualización: <span class="text-gray-200 font-mono ml-1.5">2026-11-02 15:07:57 UTC</span>
         </div>
         <a href="https://github.com/CharlyZeta/SDD-GL" target="_blank" class="flex items-center gap-1.5 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-xs text-white rounded-md transition font-medium border border-gray-700">
           <i data-lucide="github" class="w-4 h-4"></i> GitHub
@@ -285,7 +290,7 @@
       <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h3 class="text-base font-bold text-white flex items-center gap-2">
-            <i data-lucide="activity" class="w-5 h-5 text-sddCyan"></i> Uso local del MCP (esta máquina)
+            <i data-lucide="activity" class="w-5 h-5 text-sddCyan"></i> Uso local del MCP — @sdd-gl/mcp-server
           </h3>
           <p class="text-xs text-gray-400">Invocaciones reales registradas en <code>.sdd/usage.json</code>. Sin agregación global ni llamadas de red: este HTML es tuyo y podés publicarlo como métrica de uso de la metodología.</p>
         </div>
@@ -293,6 +298,80 @@
           <span class="w-2 h-2 rounded-full bg-gray-600"></span>
           <span>Fuente: sin datos (dashboard público del showcase)</span>
         </div>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="p-3 rounded-lg bg-black/30 border border-sddBorder">
+          <div class="text-[10px] uppercase tracking-wider text-gray-500">Sesiones</div>
+          <div class="text-xl font-bold text-white">—</div>
+        </div>
+        <div class="p-3 rounded-lg bg-black/30 border border-sddBorder">
+          <div class="text-[10px] uppercase tracking-wider text-gray-500">Invocaciones</div>
+          <div class="text-xl font-bold text-white">—</div>
+        </div>
+        <div class="p-3 rounded-lg bg-black/30 border border-sddBorder">
+          <div class="text-[10px] uppercase tracking-wider text-gray-500">Por sesión</div>
+          <div class="text-xl font-bold text-white">—</div>
+        </div>
+        <div class="p-3 rounded-lg bg-black/30 border border-sddBorder">
+          <div class="text-[10px] uppercase tracking-wider text-gray-500">Última actividad</div>
+          <div class="text-sm font-mono text-gray-200 mt-1">sin datos</div>
+        </div>
+      </div>
+
+      <div class="p-4 rounded-lg bg-black/30 border border-sddBorder">
+        <div class="flex items-center justify-between mb-3">
+          <h4 class="text-xs font-bold uppercase text-gray-300 flex items-center gap-1.5">
+            <i data-lucide="bar-chart" class="w-4 h-4 text-sddEmerald"></i> Actividad de los últimos 14 días
+          </h4>
+          <span class="text-[10px] text-gray-500 font-mono">invocaciones por día</span>
+        </div>
+        <div class="flex items-end gap-1 h-16">
+          <div class="flex-1 flex flex-col items-center justify-end" title="2026-10-20: 0">
+              <div class="w-full rounded-t bg-gray-700" style="height:2px"></div>
+              <span class="text-[8px] text-gray-600 mt-1">10-20</span>
+            </div><div class="flex-1 flex flex-col items-center justify-end" title="2026-10-21: 0">
+              <div class="w-full rounded-t bg-gray-700" style="height:2px"></div>
+              <span class="text-[8px] text-gray-600 mt-1">10-21</span>
+            </div><div class="flex-1 flex flex-col items-center justify-end" title="2026-10-22: 0">
+              <div class="w-full rounded-t bg-gray-700" style="height:2px"></div>
+              <span class="text-[8px] text-gray-600 mt-1">10-22</span>
+            </div><div class="flex-1 flex flex-col items-center justify-end" title="2026-10-23: 0">
+              <div class="w-full rounded-t bg-gray-700" style="height:2px"></div>
+              <span class="text-[8px] text-gray-600 mt-1">10-23</span>
+            </div><div class="flex-1 flex flex-col items-center justify-end" title="2026-10-24: 0">
+              <div class="w-full rounded-t bg-gray-700" style="height:2px"></div>
+              <span class="text-[8px] text-gray-600 mt-1">10-24</span>
+            </div><div class="flex-1 flex flex-col items-center justify-end" title="2026-10-25: 0">
+              <div class="w-full rounded-t bg-gray-700" style="height:2px"></div>
+              <span class="text-[8px] text-gray-600 mt-1">10-25</span>
+            </div><div class="flex-1 flex flex-col items-center justify-end" title="2026-10-26: 0">
+              <div class="w-full rounded-t bg-gray-700" style="height:2px"></div>
+              <span class="text-[8px] text-gray-600 mt-1">10-26</span>
+            </div><div class="flex-1 flex flex-col items-center justify-end" title="2026-10-27: 0">
+              <div class="w-full rounded-t bg-gray-700" style="height:2px"></div>
+              <span class="text-[8px] text-gray-600 mt-1">10-27</span>
+            </div><div class="flex-1 flex flex-col items-center justify-end" title="2026-10-28: 0">
+              <div class="w-full rounded-t bg-gray-700" style="height:2px"></div>
+              <span class="text-[8px] text-gray-600 mt-1">10-28</span>
+            </div><div class="flex-1 flex flex-col items-center justify-end" title="2026-10-29: 0">
+              <div class="w-full rounded-t bg-gray-700" style="height:2px"></div>
+              <span class="text-[8px] text-gray-600 mt-1">10-29</span>
+            </div><div class="flex-1 flex flex-col items-center justify-end" title="2026-10-30: 0">
+              <div class="w-full rounded-t bg-gray-700" style="height:2px"></div>
+              <span class="text-[8px] text-gray-600 mt-1">10-30</span>
+            </div><div class="flex-1 flex flex-col items-center justify-end" title="2026-10-31: 0">
+              <div class="w-full rounded-t bg-gray-700" style="height:2px"></div>
+              <span class="text-[8px] text-gray-600 mt-1">10-31</span>
+            </div><div class="flex-1 flex flex-col items-center justify-end" title="2026-11-01: 0">
+              <div class="w-full rounded-t bg-gray-700" style="height:2px"></div>
+              <span class="text-[8px] text-gray-600 mt-1">11-01</span>
+            </div><div class="flex-1 flex flex-col items-center justify-end" title="2026-11-02: 0">
+              <div class="w-full rounded-t bg-gray-700" style="height:2px"></div>
+              <span class="text-[8px] text-gray-600 mt-1">11-02</span>
+            </div>
+        </div>
+        <p class="text-xs text-gray-500 text-center mt-2">sin datos</p>
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">

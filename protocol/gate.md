@@ -40,21 +40,28 @@ El modo Gate evalúa el perfil de gobernanza especificado en el encabezado `# Ga
 
 | Sección             | Condición mínima                                          |
 |---------------------|-----------------------------------------------------------|
+| User Story          | `Como / Quiero / Para` con **un solo objetivo** (`STORY_MISSING`, `STORY_MULTI_GOAL`) |
 | Main Flow           | Al menos 3 pasos numerados                                |
 | Alternative Flows   | Al menos 1 AF-XX (o explícitamente "ninguno")             |
 | Business Rules      | Al menos 1 BR-XXX expresado como invariante verificable   |
 | Acceptance Criteria | Al menos 1 AC-XXX en formato GIVEN/WHEN/THEN              |
 | Ambiguity Log       | Sin ítems `- [ ]` sin resolver                            |
 | Inferred Assumptions | Sin ítems `- [ ]`; si no hay inferencias → `- [x] Ninguno` (AF-03; BR-006) |
+| Presupuesto         | ≤7 BR, ≤8 AC, ≤5 AF, ≤9 pasos (`BUDGET_EXCEEDED`)          |
 
 ##### B. Para contratos de Bugfix (ID: FIX-XXXX):
 
 | Sección             | Condición mínima                                          |
 |---------------------|-----------------------------------------------------------|
-| Reproduction Steps  | Al menos 3 pasos numerados                                |
+| User Story          | `Como / Quiero / Para` (sin lint de objetivo único: AF-02 de FEAT-0025) |
+| Reproduction Steps  | Al menos 3 pasos numerados (admite `## Pasos`)            |
 | Acceptance Criteria | Al menos 1 AC-XXX (por ejemplo, AC-001) en GIVEN/WHEN/THEN |
 | Ambiguity Log       | Sin ítems `- [ ]` sin resolver                            |
 | Inferred Assumptions | Sin ítems `- [ ]`; si no hay inferencias → `- [x] Ninguno` (BR-006) |
+| Presupuesto         | ≤7 BR, ≤8 AC, ≤5 AF, ≤9 pasos (`BUDGET_EXCEEDED`)          |
+
+> Los chequeos de atomicidad (`STORY_*`, `BUDGET_EXCEEDED`) aplican solo a `Status: DRAFT`.
+> Waivers: `- [x] STORY-OK: motivo` y `- [x] BUDGET-OK: motivo` en el Ambiguity Log.
 
 *Regla de avance:* En modo `STRICT`, si alguna condición falla → completar **una sola sección** y detenerse. En modo `EXPRESS` → completar todas las secciones pendientes y avanzar directo a la consistencia.
 

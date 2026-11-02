@@ -18,6 +18,58 @@ function getProjectRoot(customRoot) {
   return path.resolve(__dirname, '..');
 }
 
+// Project identity for the dashboard header. Read at render time, never persisted
+// in the telemetry ledger (no paths or PII in .sdd/usage.json).
+function getProjectIdentity(root) {
+  let name = path.basename(root) || 'proyecto';
+
+  try {
+    const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+    if (pkg && pkg.name) name = pkg.name;
+  } catch (error) {
+    // No package.json: fall back to the directory name.
+  }
+
+  let branch = null;
+  let remote = null;
+
+  try {
+    const { execSync } = require('node:child_process');
+    const options = { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] };
+    remote = execSync('git config --get remote.origin.url', options).trim() || null;
+    branch = execSync('git rev-parse --abbrev-ref HEAD', options).trim() || null;
+  } catch (error) {
+    // Not a git repository: identity stays local-only.
+  }
+
+  if (remote) remote = remote.replace(/\/\/[^@/]*@/, '//').replace(/\.git$/, '');
+
+  return { name, branch, remote };
+}
+
+// Groups the bounded session log into a 14-day activity series.
+function buildActivitySeries(sessionLog) {
+  const days = [];
+  const today = new Date();
+
+  for (let offset = 13; offset >= 0; offset -= 1) {
+    const day = new Date(today);
+    day.setDate(day.getDate() - offset);
+    const key = day.toISOString().slice(0, 10);
+    days.push({ key, label: key.slice(5), value: 0 });
+  }
+
+  const index = new Map(days.map(day => [day.key, day]));
+  for (const session of sessionLog || []) {
+    if (!session || !session.started_at) continue;
+    const key = String(session.started_at).slice(0, 10);
+    const bucket = index.get(key);
+    if (bucket) bucket.value += session.calls || 0;
+  }
+
+  return days;
+}
+
 function generateDashboard(customRoot, options = {}) {
   const PROJECT_ROOT = getProjectRoot(customRoot);
 
@@ -111,6 +163,7 @@ function generateDashboard(customRoot, options = {}) {
     tools: {},
     clients: {},
     sessions: 0,
+    session_log: [],
     first_seen: null,
     last_updated: null
   };
@@ -127,6 +180,7 @@ function generateDashboard(customRoot, options = {}) {
           tools: { ...(parsedUsage.tools || {}) },
           clients: { ...(parsedUsage.clients || {}) },
           sessions: parsedUsage.sessions || 0,
+          session_log: Array.isArray(parsedUsage.session_log) ? parsedUsage.session_log : [],
           first_seen: parsedUsage.first_seen || null,
           last_updated: parsedUsage.last_updated || null
         };
@@ -188,6 +242,14 @@ function generateDashboard(customRoot, options = {}) {
   const clientEntries = Object.entries(usage.clients).sort((a, b) => b[1] - a[1]);
   const layerEntries = Object.entries(metrics.layer_success_rates);
   const formatRate = value => (value === null || value === undefined ? '—' : `${value}%`);
+  const formatLayerRate = value => (metricsHasData ? formatRate(value) : '—');
+
+  // Per-project usage view: identity, activity trend and session averages.
+  const identity = getProjectIdentity(PROJECT_ROOT);
+  const activity = buildActivitySeries(usage.session_log);
+  const activityMax = Math.max(1, ...activity.map(day => day.value));
+  const callsPerSession = usage.sessions > 0 ? Math.round((usage.totals.calls / usage.sessions) * 10) / 10 : 0;
+  const lastActivity = usage.last_updated ? String(usage.last_updated).slice(0, 16).replace('T', ' ') : null;
 
   // Chart payloads are built from on-disk data only; empty arrays render as "sin datos".
   const chartData = {
@@ -254,6 +316,11 @@ function generateDashboard(customRoot, options = {}) {
             SDD-GL <span class="text-xs px-2 py-0.5 rounded-full bg-sddCyan/10 text-sddCyan border border-sddCyan/30 font-mono">v0.4.0 Live</span>
           </h1>
           <p class="text-xs text-gray-400">Spec-Driven Development · Gate / Loop & AC/DC Telemetry</p>
+          <p class="text-[11px] text-gray-500 mt-0.5">
+            Proyecto: <span class="text-gray-300 font-medium">${identity.name}</span>
+            ${identity.branch ? `· rama <span class="text-gray-300 font-mono">${identity.branch}</span>` : ''}
+            ${identity.remote ? `· <span class="text-gray-400 font-mono">${identity.remote}</span>` : ''}
+          </p>
         </div>
       </div>
 
@@ -353,10 +420,10 @@ function generateDashboard(customRoot, options = {}) {
           <canvas id="layersChart"></canvas>
         </div>
         <div class="grid grid-cols-2 gap-2 mt-4 text-xs text-gray-400 pt-3 border-t border-sddBorder">
-          <div>🧪 Funcional: <span class="text-white font-mono font-bold">${formatRate(metrics.layer_success_rates.functional)}</span></div>
-          <div>🔍 Estático/Tipos: <span class="text-white font-mono font-bold">${formatRate(metrics.layer_success_rates.static)}</span></div>
-          <div>🛡️ Seguridad SAST: <span class="text-white font-mono font-bold">${formatRate(metrics.layer_success_rates.security)}</span></div>
-          <div>🏛️ Arquitectura: <span class="text-white font-mono font-bold">${formatRate(metrics.layer_success_rates.arch)}</span></div>
+          <div>🧪 Funcional: <span class="text-white font-mono font-bold">${formatLayerRate(metrics.layer_success_rates.functional)}</span></div>
+          <div>🔍 Estático/Tipos: <span class="text-white font-mono font-bold">${formatLayerRate(metrics.layer_success_rates.static)}</span></div>
+          <div>🛡️ Seguridad SAST: <span class="text-white font-mono font-bold">${formatLayerRate(metrics.layer_success_rates.security)}</span></div>
+          <div>🏛️ Arquitectura: <span class="text-white font-mono font-bold">${formatLayerRate(metrics.layer_success_rates.arch)}</span></div>
         </div>
       </div>
 
@@ -489,7 +556,7 @@ function generateDashboard(customRoot, options = {}) {
       <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h3 class="text-base font-bold text-white flex items-center gap-2">
-            <i data-lucide="activity" class="w-5 h-5 text-sddCyan"></i> Uso local del MCP (esta máquina)
+            <i data-lucide="activity" class="w-5 h-5 text-sddCyan"></i> Uso local del MCP — ${identity.name}
           </h3>
           <p class="text-xs text-gray-400">Invocaciones reales registradas en <code>.sdd/usage.json</code>. Sin agregación global ni llamadas de red: este HTML es tuyo y podés publicarlo como métrica de uso de la metodología.</p>
         </div>
@@ -497,6 +564,44 @@ function generateDashboard(customRoot, options = {}) {
           <span class="w-2 h-2 rounded-full ${hasUsage ? 'bg-sddEmerald' : 'bg-gray-600'}"></span>
           <span>Fuente: ${usageSource}</span>
         </div>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="p-3 rounded-lg bg-black/30 border border-sddBorder">
+          <div class="text-[10px] uppercase tracking-wider text-gray-500">Sesiones</div>
+          <div class="text-xl font-bold text-white">${hasUsage ? usage.sessions : '—'}</div>
+        </div>
+        <div class="p-3 rounded-lg bg-black/30 border border-sddBorder">
+          <div class="text-[10px] uppercase tracking-wider text-gray-500">Invocaciones</div>
+          <div class="text-xl font-bold text-white">${hasUsage ? usage.totals.calls : '—'}</div>
+        </div>
+        <div class="p-3 rounded-lg bg-black/30 border border-sddBorder">
+          <div class="text-[10px] uppercase tracking-wider text-gray-500">Por sesión</div>
+          <div class="text-xl font-bold text-white">${hasUsage && usage.sessions > 0 ? callsPerSession : '—'}</div>
+        </div>
+        <div class="p-3 rounded-lg bg-black/30 border border-sddBorder">
+          <div class="text-[10px] uppercase tracking-wider text-gray-500">Última actividad</div>
+          <div class="text-sm font-mono text-gray-200 mt-1">${lastActivity || 'sin datos'}</div>
+        </div>
+      </div>
+
+      <div class="p-4 rounded-lg bg-black/30 border border-sddBorder">
+        <div class="flex items-center justify-between mb-3">
+          <h4 class="text-xs font-bold uppercase text-gray-300 flex items-center gap-1.5">
+            <i data-lucide="bar-chart" class="w-4 h-4 text-sddEmerald"></i> Actividad de los últimos 14 días
+          </h4>
+          <span class="text-[10px] text-gray-500 font-mono">invocaciones por día</span>
+        </div>
+        <div class="flex items-end gap-1 h-16">
+          ${activity.map(day => {
+            const height = day.value === 0 ? 2 : Math.max(6, Math.round((day.value / activityMax) * 60));
+            return `<div class="flex-1 flex flex-col items-center justify-end" title="${day.key}: ${day.value}">
+              <div class="w-full rounded-t ${day.value === 0 ? 'bg-gray-700' : 'bg-sddEmerald/70'}" style="height:${height}px"></div>
+              <span class="text-[8px] text-gray-600 mt-1">${day.label}</span>
+            </div>`;
+          }).join('')}
+        </div>
+        ${hasUsage ? '' : '<p class="text-xs text-gray-500 text-center mt-2">sin datos</p>'}
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">

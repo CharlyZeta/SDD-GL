@@ -166,6 +166,9 @@ function runMcpTest() {
       assert.ok(usage.totals.calls >= 5, 'every tool call must be counted');
       assert.ok(usage.tools.sdd_get_status >= 1 && usage.tools.sdd_audit_traceability >= 1);
       assert.ok(!JSON.stringify(usage).includes(tmpRoot), 'no local paths in the ledger');
+      assert.strictEqual(usage.session_log.length, 1, 'the session must be recorded for the per-project view');
+      assert.strictEqual(usage.session_log[0].client, 'demo-e2e-client@9.9.9');
+      assert.ok(usage.session_log[0].calls >= 5, 'calls must be attributed to the session');
 
       console.log('\n🎉 ¡TODAS LAS PRUEBAS DEL SERVIDOR MCP PASARON SATISFACTORIAMENTE AL 100%!');
       server.kill();

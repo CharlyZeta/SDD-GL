@@ -410,6 +410,26 @@ function detectContradictions(text) {
   return contradictions;
 }
 
+// Atomicity: a contract must declare ONE user story with ONE goal, and stay
+// within a budget calibrated on the real corpus (max 9 BR / 8 AC historically).
+const ATOMICITY_BUDGET = { businessRules: 7, acceptanceCriteria: 8, alternativeFlows: 5, steps: 9 };
+
+// Reports a multi-goal story only when two infinitives are joined by a connector
+// ("crear y aprobar"), which keeps the false-positive rate low in Spanish.
+function detectMultiGoal(storySection) {
+  const quiero = storySection.match(/^\s*[-*]?\s*(?:Quiero|I want)\s*:?\s*(.+)$/im);
+  if (!quiero) return null;
+
+  const line = quiero[1].trim();
+  const joined = line.match(/\b\w+(?:ar|er|ir)\b\s*(?:,|\by\b|\be\b|\band\b)\s*\w+(?:ar|er|ir)\b/i);
+  return joined ? { line, fragment: joined[0] } : null;
+}
+
+function hasWaiver(ambiguitySection, code) {
+  const pattern = new RegExp(`^\\s*-\\s*\\[x\\]\\s*${code}\\s*:\\s*\\S`, 'im');
+  return pattern.test(ambiguitySection);
+}
+
 // Structural checklist per contract type (BR-002).
 // The flow section is resolved through aliases, so `## Pasos`, `## Main Flow` and
 // `## Reproduction Steps` are all valid for the same rule.
@@ -441,6 +461,40 @@ function validateGateStructure(text, contractId, fileName) {
     issues.push('Inferred Assumptions has open items (- [ ]).');
   }
 
+  // Atomicity checks apply while the contract is still in Gate, so already
+  // approved/resolved contracts are never retroactively invalidated.
+  const isDraft = /^#\s*Status:\s*DRAFT\s*$/m.test(text);
+
+  if (isDraft) {
+    const story = extractSection(text, 'userStory');
+    if (!story) {
+      if (!hasWaiver(ambiguity, 'STORY-OK')) {
+        issues.push('STORY_MISSING: a User Story (Como / Quiero / Para) is required before approval.');
+      }
+    } else if (!isFix && !hasWaiver(ambiguity, 'STORY-OK')) {
+      const multiGoal = detectMultiGoal(story);
+      if (multiGoal) {
+        issues.push(`STORY_MULTI_GOAL: "${multiGoal.fragment}" declares more than one goal.`);
+      }
+    }
+
+    if (!hasWaiver(ambiguity, 'BUDGET-OK')) {
+      const brCount = collectSectionIds(text, 'businessRules', 'BR').length;
+      const acCount = collectSectionIds(text, 'acceptanceCriteria', 'AC').length;
+      const afCount = collectSectionIds(text, 'alternativeFlows', 'AF').length;
+      const over = [];
+
+      if (brCount > ATOMICITY_BUDGET.businessRules) over.push(`${brCount} BR (max ${ATOMICITY_BUDGET.businessRules})`);
+      if (acCount > ATOMICITY_BUDGET.acceptanceCriteria) over.push(`${acCount} AC (max ${ATOMICITY_BUDGET.acceptanceCriteria})`);
+      if (afCount > ATOMICITY_BUDGET.alternativeFlows) over.push(`${afCount} AF (max ${ATOMICITY_BUDGET.alternativeFlows})`);
+      if (steps > ATOMICITY_BUDGET.steps) over.push(`${steps} steps (max ${ATOMICITY_BUDGET.steps})`);
+
+      if (over.length > 0) {
+        issues.push(`BUDGET_EXCEEDED: ${over.join(', ')} — split the contract or record a BUDGET-OK waiver.`);
+      }
+    }
+  }
+
   return { type, isFix, issues };
 }
 
@@ -453,6 +507,7 @@ function validateGateStructure(text, contractId, fileName) {
 
 const USAGE_SCHEMA_VERSION = 1;
 const MAX_TRACKED_CLIENTS = 50;
+const MAX_SESSIONS = 50;
 let telemetryWarning = null;
 
 function defaultUsage() {
@@ -461,6 +516,7 @@ function defaultUsage() {
     first_seen: null,
     last_updated: null,
     sessions: 0,
+    session_log: [],
     clients: {},
     tools: {},
     totals: { calls: 0, errors: 0 }
@@ -511,6 +567,13 @@ function recordToolCall(toolName, succeeded) {
   if (!succeeded) usage.totals.errors += 1;
   usage.tools[toolName] = (usage.tools[toolName] || 0) + 1;
 
+  // Attribute the call to the most recent session (per-project usage view).
+  if (Array.isArray(usage.session_log) && usage.session_log.length > 0) {
+    const session = usage.session_log[usage.session_log.length - 1];
+    session.calls = (session.calls || 0) + 1;
+    session.last_call_at = now;
+  }
+
   writeUsageAtomic(usage);
 }
 
@@ -530,7 +593,30 @@ function recordDeclaredClient(clientInfo) {
     usage.clients[key] = (usage.clients[key] || 0) + 1;
   }
 
+  // Bounded session history: dates, client and call counts only (no PII).
+  if (!Array.isArray(usage.session_log)) usage.session_log = [];
+  usage.session_log.push({ started_at: now, client: key, calls: 0, last_call_at: now });
+  if (usage.session_log.length > MAX_SESSIONS) {
+    usage.session_log = usage.session_log.slice(-MAX_SESSIONS);
+  }
+
   writeUsageAtomic(usage);
+}
+
+// ---------------------------------------------------------------------------
+// Structured run events (append-only NDJSON)
+// The markdown `.log` files are for humans; this ledger is for tools (report,
+// dashboards, future graph views). One JSON object per line, never rewritten.
+// ---------------------------------------------------------------------------
+
+function appendRunEvent(contractId, event) {
+  try {
+    const dir = path.join(SDD_RUNS_DIR, contractId);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.appendFileSync(path.join(dir, 'events.ndjson'), `${JSON.stringify(event)}\n`, 'utf8');
+  } catch (error) {
+    telemetryWarning = `run events: ${error.message}`;
+  }
 }
 
 // Tool definitions for MCP tools/list
@@ -665,6 +751,11 @@ function dispatchToolCall(name, args) {
 ## Intent
 ${args.intent || '[Inferred from user description]'}
 
+## User Story
+- Como: [quién]
+- Quiero: [un solo objetivo]
+- Para: [beneficio esperado]
+
 ## Use Case
 **Actor:** Developer
 **Goal:** ${args.title}
@@ -685,6 +776,9 @@ ${args.intent || '[Inferred from user description]'}
 
 ## Entities Affected
 - [Entity]: [relevant attributes]
+
+## Inferred Assumptions
+- [x] Ninguno
 
 ## Ambiguity Log
 - [ ]
@@ -892,6 +986,18 @@ ${args.intent || '[Inferred from user description]'}
 # New Status: ⏳
 `, 'utf8');
 
+        appendRunEvent(args.contract_id, {
+          ts: new Date().toISOString(),
+          contract: args.contract_id,
+          item: itemIdFound,
+          layer,
+          test_id: testId,
+          agent: parsed.agent,
+          event: 'CLAIM',
+          previous_status: currentStatus,
+          new_status: '⏳'
+        });
+
         return {
           contract_id: args.contract_id,
           item_id: itemIdFound,
@@ -1007,6 +1113,21 @@ ${args.intent || '[Inferred from user description]'}
 ${evidence}
 `;
       fs.writeFileSync(auditPath, auditContent, 'utf8');
+
+      appendRunEvent(args.contract_id, {
+        ts: new Date().toISOString(),
+        contract: args.contract_id,
+        item: itemIdFound,
+        layer,
+        test_id: testId,
+        agent: parsed.agent,
+        event: 'RESULT',
+        result: itemStatus,
+        previous_status: currentStatus,
+        new_status: newStatus,
+        evidence: String(evidence).slice(0, 500),
+        audit_log_path: auditPath
+      });
 
       return {
         contract_id: args.contract_id,
