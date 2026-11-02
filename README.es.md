@@ -358,11 +358,13 @@ El mismo core está disponible como CLI, así SDD-GL funciona en una terminal o 
 
 | Comando | Qué hace |
 | :--- | :--- |
+| `sdd init` | prepara el proyecto (`.sdd/config.json`, `contracts/`, `CONSTITUTION.md`); `--private` deja los contratos fuera de git |
+| `sdd doctor` | diagnóstico de la instalación con OK / WARN / FAIL y cómo corregir cada hallazgo |
 | `sdd status` | todos los contratos con estado, modo y progreso del Completion Map |
 | `sdd new "historia"` | crea un contrato (`--type FEAT\|FIX`, `--gate EXPRESS\|STRICT`) |
-| `sdd validate <ID>` | checklist de Gate + contradicciones BR↔AC |
+| `sdd validate <ID>` | checklist de Gate + contradicciones BR↔AC + atomicidad (`STORY_*`, `BUDGET_EXCEEDED`) |
 | `sdd next` | qué hacer ahora, según el estado del proyecto |
-| `sdd report <ID>` | informe de ejecución: mapa, logs de corridas, métricas y veredicto |
+| `sdd report <ID>` | informe de ejecución: mapa, eventos de corrida, métricas y veredicto |
 
 Todos aceptan `--json` (para CI) y `--root <dir>`. Los códigos de salida son estables: `0` sin hallazgos, `1` con hallazgos, `2` error de uso. Los comandos de lectura nunca crean archivos en el proyecto.
 

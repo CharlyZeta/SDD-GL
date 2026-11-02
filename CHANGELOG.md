@@ -95,3 +95,15 @@
 - **Per-project usage in the dashboard**: project identity (name, branch, remote) in the header, session/ invocation /calls-per-session cards, last activity and a 14-day activity chart, all from the local ledger.
 - **Structured run events**: `.sdd/runs/<ID>/events.ndjson` (append-only, one JSON object per line) next to the human-readable logs; `sdd report` reads it to build the execution report.
 - **Tests**: neutral-format (7), atomicity (8), CLI (13), plus session-log and run-event assertions in the existing suites.
+
+## [0.5.2] — 2026-11-02
+
+### Added — CLI usage in the dashboard, work-type split, pending work, init and doctor
+
+- **CLI counts as usage**: `sdd` invocations are recorded in `.sdd/usage.json` with `sources` (mcp/cli), `by_type` (feature/fix/unknown) and a per-command breakdown. Each call is attributed to the contract type it serves, so the dashboard answers "how much of my usage went to fixes vs features".
+- **Dashboard — origin and type**: two new panels with MCP vs CLI share and FEAT/FIX/unattributed share, plus a footnote when older calls have no recorded origin.
+- **Dashboard — pending work**: a section listing every contract that is not RESOLVED, with its open and in-progress items, progress bar and the exact command to run next.
+- **`sdd init`**: creates `.sdd/config.json`, `contracts/` and `CONSTITUTION.md`, is idempotent, and `--private` adds the ignore rules (`contracts/*`, `.sdd/`) without duplicating lines.
+- **`sdd doctor`**: read-only diagnosis (Node version, contracts, config, unreadable headers, interrupted items, MCP tools, agent frontmatter) with OK / WARN / FAIL and exit code 1 on failures.
+- **Configurable layers**: `.sdd/config.json` can declare `layers`, and the metrics ledger, Completion Map builder and dashboard adapt to them; the four standard layers remain the default.
+- **Tests**: CLI now covers init, doctor and usage attribution (18), dashboard covers pending and origin panels (21).

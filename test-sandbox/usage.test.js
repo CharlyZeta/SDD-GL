@@ -388,3 +388,64 @@ describe('Dashboard per project (FEAT-0008 follow-up)', () => {
     }
   });
 });
+
+describe('Dashboard — pending work and usage origin', () => {
+  test('pending contracts and their open items are shown', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-dash-pending-'));
+    try {
+      fs.mkdirSync(path.join(root, 'contracts'), { recursive: true });
+      fs.writeFileSync(path.join(root, 'contracts', 'FEAT-9601.md'), `# CONTRACT: Algo pendiente
+# ID: FEAT-9601
+# Status: APPROVED
+# Mode: LOOP
+# Gate-Mode: EXPRESS
+
+## Completion Map
+# [item-id]|[layer]|[test-id]|[agente]|[status]
+# BR-001 | functional | unit-test:FEAT-9601-br001 | tester | ✅
+# BR-002 | functional | unit-test:FEAT-9601-br002 | tester | ❌
+`, 'utf8');
+
+      const result = generateDashboard(root);
+      const html = fs.readFileSync(result.path, 'utf8');
+
+      assert.match(html, /Trabajo pendiente/);
+      assert.match(html, /FEAT-9601/);
+      assert.match(html, /1 pendiente\(s\)/);
+      assert.match(html, /sdd loop FEAT-9601/);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test('usage origin (MCP/CLI) and work type (FEAT/FIX) are rendered', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-dash-origin-'));
+    try {
+      fs.mkdirSync(path.join(root, 'contracts'), { recursive: true });
+      fs.mkdirSync(path.join(root, '.sdd'), { recursive: true });
+      fs.writeFileSync(path.join(root, '.sdd', 'usage.json'), JSON.stringify({
+        schema_version: 1,
+        sessions: 1,
+        clients: {},
+        sources: { mcp: 6, cli: 4 },
+        by_type: { feature: 7, fix: 3, unknown: 0 },
+        cli_commands: { validate: 2, status: 2 },
+        tools: { sdd_step_loop: 6 },
+        totals: { calls: 10, errors: 0 }
+      }), 'utf8');
+
+      const result = generateDashboard(root);
+      const html = fs.readFileSync(result.path, 'utf8');
+
+      assert.match(html, /Origen del uso/);
+      assert.match(html, /MCP · 6 llamadas/);
+      assert.match(html, /CLI · 4 llamadas/);
+      assert.match(html, /Tipo de trabajo/);
+      assert.match(html, /FEAT · 7/);
+      assert.match(html, /FIX · 3/);
+      assert.match(html, /validate:2/);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+});

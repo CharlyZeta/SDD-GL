@@ -119,11 +119,13 @@ claude mcp add sdd-gl -- node ./mcp/server.js
 El binario `sdd` expone el mismo core que el servidor MCP:
 
 ```bash
+npx sdd init                   # prepara .sdd/config.json, contracts/ y CONSTITUTION.md
+npx sdd doctor                 # diagnóstico de la instalación (OK / WARN / FAIL)
 npx sdd status                 # contratos, estado y progreso del mapa
 npx sdd new "notificaciones por email" --type FEAT
-npx sdd validate FEAT-0001     # checklist de Gate + contradicciones
+npx sdd validate FEAT-0001     # Gate + contradicciones + atomicidad
 npx sdd next                   # qué hacer ahora
-npx sdd report FEAT-0001       # informe de ejecución (mapa + logs + métricas)
+npx sdd report FEAT-0001       # informe de ejecución (mapa + eventos + métricas)
 ```
 
 - `--json` en todos los comandos, para CI y scripts.

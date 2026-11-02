@@ -31,21 +31,48 @@ const rootFlag = flagValue('--root');
 const ROOT = rootFlag ? path.resolve(rootFlag) : process.cwd();
 
 process.env.SDD_PROJECT_ROOT = ROOT;
-// The usage ledger measures MCP traffic; CLI reads must not inflate it.
-process.env.SDD_TELEMETRY = 'off';
 
 const { handleToolCall, TOOLS } = require('../mcp/server.js');
+
+// CLI usage is real usage of the methodology: it is counted and attributed to the
+// contract type it serves (feature/fix) when a contract is involved.
+function inferContractType(contractId) {
+  if (!contractId) return null;
+  const source = readContract(contractId);
+  if (!source) return /FIX/i.test(contractId) ? 'fix' : null;
+
+  const frontMatter = source.text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (frontMatter) {
+    const declared = frontMatter[1].match(/^\s*type\s*:\s*(\w+)/im);
+    if (declared) return declared[1].toLowerCase();
+  }
+
+  const haystack = `${contractId} ${source.file}`.toUpperCase();
+  if (/FIX-\d/.test(haystack)) return 'fix';
+  if (/FEAT-\d/.test(haystack)) return 'feature';
+  return null;
+}
+
+function callTool(name, args, command, contractId) {
+  return handleToolCall(name, args, {
+    source: 'cli',
+    command,
+    type: inferContractType(contractId)
+  });
+}
 
 const USAGE = `SDD-GL CLI
 
   sdd <comando> [opciones]
 
 Comandos:
+  init                   Prepara el proyecto (.sdd/config.json, contracts/, CONSTITUTION.md)
   status                 Estado de todos los contratos y progreso del mapa
   new "<título>"         Crea un contrato nuevo (--type FEAT|FIX, --gate EXPRESS|STRICT)
   validate <ID>          Validación de Gate (checklist + contradicciones)
   next                   Qué hacer ahora, según el estado del proyecto
   report <ID>            Informe de ejecución del contrato
+  doctor                 Diagnóstico de la instalación
 
 Opciones:
   --json                 Salida JSON (para CI y scripts)
@@ -182,7 +209,7 @@ function formatTable(rows, headers) {
 // ---------------------------------------------------------------------------
 
 function commandStatus() {
-  const status = handleToolCall('sdd_get_status', {});
+  const status = callTool('sdd_get_status', {}, 'status', null);
   const contracts = status.contracts || [];
 
   if (wantsJson) {
@@ -220,6 +247,10 @@ function commandNew() {
     type,
     gate_mode: gateMode,
     intent: flagValue('--intent') || title
+  }, {
+    source: 'cli',
+    command: 'new',
+    type: type === 'FIX' ? 'fix' : 'feature'
   });
 
   if (result.error) fail(result.error);
@@ -238,7 +269,7 @@ function commandValidate() {
   const contractId = positional[1];
   if (!contractId) fail('falta el ID del contrato (sdd validate <ID>)');
 
-  const result = handleToolCall('sdd_validate_gate', { contract_id: contractId });
+  const result = callTool('sdd_validate_gate', { contract_id: contractId }, 'validate', contractId);
   if (result.error) fail(result.error);
 
   if (wantsJson) {
@@ -265,7 +296,7 @@ function commandValidate() {
 }
 
 function commandNext() {
-  const status = handleToolCall('sdd_get_status', {});
+  const status = callTool('sdd_get_status', {}, 'next', null);
   const contracts = status.contracts || [];
 
   const stalled = [];
@@ -346,7 +377,7 @@ function commandReport() {
   const items = parseMap(text);
   const done = items.filter(item => item.status === '✅').length;
   const runs = readRunLogs(contractId);
-  const metrics = handleToolCall('sdd_get_metrics', {});
+  const metrics = callTool('sdd_get_metrics', {}, 'report', contractId);
 
   const claims = runs.entries.filter(entry => entry.event === 'CLAIM').length;
   const passes = runs.entries.filter(entry => entry.result === 'PASS').length;
@@ -425,6 +456,157 @@ function commandReport() {
 }
 
 // ---------------------------------------------------------------------------
+// Init and doctor
+// ---------------------------------------------------------------------------
+
+const DEFAULT_CONFIG = {
+  schema_version: 1,
+  layers: ['functional', 'static', 'security', 'arch'],
+  suite: null,
+  suite_policy: 'on_resolve',
+  timeout_seconds: 300
+};
+
+const CONSTITUTION_TEMPLATE = `# Constitución del proyecto
+
+## Principios Arquitectónicos
+- [Reglas no negociables: capas, dependencias permitidas, límites.]
+
+## Estándares de Seguridad
+- [Manejo de secretos, datos personales y dependencias.]
+`;
+
+function commandInit() {
+  const created = [];
+  const skipped = [];
+
+  const contractsDir = path.join(ROOT, 'contracts');
+  if (!fs.existsSync(contractsDir)) {
+    fs.mkdirSync(contractsDir, { recursive: true });
+    created.push('contracts/');
+  } else {
+    skipped.push('contracts/');
+  }
+
+  const sddDir = path.join(ROOT, '.sdd');
+  fs.mkdirSync(sddDir, { recursive: true });
+
+  const configPath = path.join(sddDir, 'config.json');
+  if (!fs.existsSync(configPath)) {
+    fs.writeFileSync(configPath, `${JSON.stringify(DEFAULT_CONFIG, null, 2)}\n`, 'utf8');
+    created.push('.sdd/config.json');
+  } else {
+    skipped.push('.sdd/config.json');
+  }
+
+  const constitutionPath = path.join(ROOT, 'CONSTITUTION.md');
+  if (!fs.existsSync(constitutionPath)) {
+    fs.writeFileSync(constitutionPath, CONSTITUTION_TEMPLATE, 'utf8');
+    created.push('CONSTITUTION.md');
+  } else {
+    skipped.push('CONSTITUTION.md');
+  }
+
+  if (args.includes('--private')) {
+    const gitignorePath = path.join(ROOT, '.gitignore');
+    const current = fs.existsSync(gitignorePath) ? fs.readFileSync(gitignorePath, 'utf8') : '';
+    const wanted = ['contracts/*', '!contracts/.gitkeep', '.sdd/'];
+    const missing = wanted.filter(line => !current.split(/\r?\n/).map(l => l.trim()).includes(line));
+
+    if (missing.length > 0) {
+      const prefix = current === '' || current.endsWith('\n') ? '' : '\n';
+      fs.writeFileSync(gitignorePath, `${current}${prefix}\n# Trabajo SDD-GL privado\n${missing.join('\n')}\n`, 'utf8');
+      created.push(`.gitignore (+${missing.length})`);
+    } else {
+      skipped.push('.gitignore');
+    }
+  }
+
+  if (wantsJson) {
+    console.log(JSON.stringify({ root: ROOT, created, skipped }, null, 2));
+    return 0;
+  }
+
+  console.log(`Proyecto inicializado en ${ROOT}`);
+  if (created.length > 0) created.forEach(item => console.log(`  + ${item}`));
+  if (skipped.length > 0) skipped.forEach(item => console.log(`  = ${item} (sin cambios)`));
+  console.log('\nSiguiente paso: sdd new "tu primera historia"');
+  return 0;
+}
+
+function commandDoctor() {
+  const checks = [];
+  const add = (name, status, detail) => checks.push({ name, status, detail });
+
+  const major = Number(process.versions.node.split('.')[0]);
+  if (major >= 18) add('node', 'OK', `v${process.versions.node}`);
+  else add('node', 'FAIL', `se requiere Node >= 18 (actual v${process.versions.node})`);
+
+  const contractsDir = path.join(ROOT, 'contracts');
+  if (fs.existsSync(contractsDir)) add('contracts', 'OK', contractsDir);
+  else add('contracts', 'WARN', 'no existe contracts/ — creá el primero con sdd new');
+
+  const configPath = path.join(ROOT, '.sdd', 'config.json');
+  if (fs.existsSync(configPath)) {
+    try {
+      const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      const layers = Array.isArray(config.layers) ? config.layers.join(', ') : 'default';
+      add('config', 'OK', `capas: ${layers}`);
+    } catch (error) {
+      add('config', 'FAIL', `.sdd/config.json inválido: ${error.message}`);
+    }
+  } else {
+    add('config', 'WARN', 'sin .sdd/config.json — se usan los valores por defecto (sdd init)');
+  }
+
+  const unreadable = [];
+  const stalled = [];
+
+  if (fs.existsSync(contractsDir)) {
+    for (const name of fs.readdirSync(contractsDir).filter(entry => entry.toLowerCase().endsWith('.md'))) {
+      const text = fs.readFileSync(path.join(contractsDir, name), 'utf8');
+      if (!/^#\s*ID:/m.test(text) || !/^#\s*Status:/m.test(text)) unreadable.push(name);
+      if (/^\s*#.*\|\s*⏳\s*$/m.test(text)) stalled.push(name);
+    }
+  }
+
+  if (unreadable.length > 0) add('contratos', 'FAIL', `encabezado ilegible: ${unreadable.join(', ')}`);
+  else add('contratos', 'OK', 'todos los encabezados son legibles');
+
+  if (stalled.length > 0) add('en curso', 'WARN', `ítems en ⏳ (reanudar): ${stalled.join(', ')}`);
+  else add('en curso', 'OK', 'sin ítems interrumpidos');
+
+  add('mcp', 'OK', `${TOOLS.length} herramientas disponibles`);
+
+  const agentsDir = path.join(ROOT, '.claude', 'agents');
+  if (fs.existsSync(agentsDir)) {
+    const withoutFrontMatter = fs.readdirSync(agentsDir)
+      .filter(name => name.endsWith('.md'))
+      .filter(name => !fs.readFileSync(path.join(agentsDir, name), 'utf8').startsWith('---'));
+
+    if (withoutFrontMatter.length > 0) {
+      add('agentes', 'WARN', `sin frontmatter: ${withoutFrontMatter.join(', ')}`);
+    } else {
+      add('agentes', 'OK', 'frontmatter completo');
+    }
+  }
+
+  const hasFailure = checks.some(check => check.status === 'FAIL');
+
+  if (wantsJson) {
+    console.log(JSON.stringify({ root: ROOT, checks, ok: !hasFailure }, null, 2));
+    return hasFailure ? 1 : 0;
+  }
+
+  for (const check of checks) {
+    const icon = check.status === 'OK' ? '✓' : check.status === 'WARN' ? '!' : '✗';
+    console.log(`[${icon}] ${check.name.padEnd(10)} ${check.detail}`);
+  }
+  console.log(hasFailure ? '\nHay fallas que impiden el flujo normal.' : '\nDiagnóstico sin fallas.');
+  return hasFailure ? 1 : 0;
+}
+
+// ---------------------------------------------------------------------------
 // Dispatch
 // ---------------------------------------------------------------------------
 
@@ -441,6 +623,8 @@ const commands = {
   validate: commandValidate,
   next: commandNext,
   report: commandReport,
+  init: commandInit,
+  doctor: commandDoctor,
   tools: () => {
     if (wantsJson) {
       console.log(JSON.stringify(TOOLS.map(tool => tool.name), null, 2));

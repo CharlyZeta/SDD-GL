@@ -357,11 +357,13 @@ The same core is available as a CLI, so SDD-GL works in a terminal or in CI:
 
 | Command | What it does |
 | :--- | :--- |
+| `sdd init` | prepares the project (`.sdd/config.json`, `contracts/`, `CONSTITUTION.md`); `--private` keeps contracts out of git |
+| `sdd doctor` | installation diagnosis with OK / WARN / FAIL and how to fix each finding |
 | `sdd status` | every contract with status, mode and Completion Map progress |
 | `sdd new "story"` | creates a contract (`--type FEAT\|FIX`, `--gate EXPRESS\|STRICT`) |
-| `sdd validate <ID>` | Gate checklist + BR↔AC contradictions |
+| `sdd validate <ID>` | Gate checklist + BR↔AC contradictions + atomicity (`STORY_*`, `BUDGET_EXCEEDED`) |
 | `sdd next` | what to do now, based on the project state |
-| `sdd report <ID>` | execution report: map, run logs, metrics and verdict |
+| `sdd report <ID>` | execution report: map, run events, metrics and verdict |
 
 Every command accepts `--json` (for CI) and `--root <dir>`. Exit codes are stable: `0` clean, `1` findings, `2` usage error. Read-only commands never create files in the project.
 

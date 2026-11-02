@@ -61,7 +61,7 @@
       <div class="flex items-center space-x-4">
         <div class="flex items-center text-xs text-gray-400 bg-sddCard/80 px-3 py-1.5 rounded-md border border-sddBorder">
           <span class="w-2 h-2 rounded-full bg-sddEmerald animate-pulse mr-2"></span>
-          Última actualización: <span class="text-gray-200 font-mono ml-1.5">2026-11-02 15:07:57 UTC</span>
+          Última actualización: <span class="text-gray-200 font-mono ml-1.5">2026-11-02 15:28:37 UTC</span>
         </div>
         <a href="https://github.com/CharlyZeta/SDD-GL" target="_blank" class="flex items-center gap-1.5 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-xs text-white rounded-md transition font-medium border border-gray-700">
           <i data-lucide="github" class="w-4 h-4"></i> GitHub
@@ -319,6 +319,41 @@
         </div>
       </div>
 
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="p-4 rounded-lg bg-black/30 border border-sddBorder space-y-3">
+          <h4 class="text-xs font-bold uppercase text-gray-300 flex items-center gap-1.5">
+            <i data-lucide="plug" class="w-4 h-4 text-sddCyan"></i> Origen del uso
+          </h4>
+          <div class="flex justify-between text-xs text-gray-400">
+            <span>MCP · 0 llamadas</span>
+            <span>CLI · 0 llamadas</span>
+          </div>
+          <div class="w-full bg-gray-800 rounded-full h-2 flex overflow-hidden">
+            <div class="bg-sddCyan h-2" style="width: 0%"></div>
+            <div class="bg-sddPurple h-2" style="width: 0%"></div>
+          </div>
+          <div class="text-[11px] text-gray-500">MCP 0% · CLI 0%</div>
+          
+        </div>
+
+        <div class="p-4 rounded-lg bg-black/30 border border-sddBorder space-y-3">
+          <h4 class="text-xs font-bold uppercase text-gray-300 flex items-center gap-1.5">
+            <i data-lucide="split" class="w-4 h-4 text-sddEmerald"></i> Tipo de trabajo
+          </h4>
+          <div class="flex justify-between text-xs text-gray-400">
+            <span>FEAT · 0</span>
+            <span>FIX · 0</span>
+            <span>sin atribuir · 0</span>
+          </div>
+          <div class="w-full bg-gray-800 rounded-full h-2 flex overflow-hidden">
+            <div class="bg-sddCyan h-2" style="width: 0%"></div>
+            <div class="bg-sddAmber h-2" style="width: 0%"></div>
+            <div class="bg-gray-600 h-2" style="width: 0%"></div>
+          </div>
+          <div class="text-[11px] text-gray-500">Las llamadas se atribuyen al tipo del contrato que estaban resolviendo.</div>
+        </div>
+      </div>
+
       <div class="p-4 rounded-lg bg-black/30 border border-sddBorder">
         <div class="flex items-center justify-between mb-3">
           <h4 class="text-xs font-bold uppercase text-gray-300 flex items-center gap-1.5">
@@ -455,6 +490,23 @@
         </div>
 
       </div>
+    </section>
+
+    <!-- PENDING WORK DECLARED BY THE CONTRACTS -->
+    <section class="glass-card p-6 rounded-xl space-y-4">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h3 class="text-base font-bold text-white flex items-center gap-2">
+            <i data-lucide="list-checks" class="w-5 h-5 text-sddAmber"></i> Trabajo pendiente
+          </h3>
+          <p class="text-xs text-gray-400">Contratos que no están RESOLVED y sus ítems abiertos en el Completion Map</p>
+        </div>
+        <span class="text-[11px] px-2.5 py-1 rounded bg-sddAmber/20 text-sddAmber border border-sddAmber/30 font-semibold">
+          0 contrato(s) · 0 ítem(s) abiertos
+        </span>
+      </div>
+
+      <p class="text-sm text-gray-400">Sin pendientes: los 3 contrato(s) están RESOLVED.</p>
     </section>
 
     <!-- INTERACTIVE CONTRACT EXPLORER -->

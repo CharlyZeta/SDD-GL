@@ -18,7 +18,7 @@ const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-cli-'));
 function run(args, options = {}) {
   const result = spawnSync(process.execPath, [CLI, ...args], {
     cwd: options.cwd || tempRoot,
-    env: { ...process.env, SDD_PROJECT_ROOT: options.cwd || tempRoot, SDD_TELEMETRY: 'off' },
+    env: { ...process.env, SDD_PROJECT_ROOT: options.cwd || tempRoot },
     encoding: 'utf8'
   });
   return { code: result.status, stdout: result.stdout, stderr: result.stderr };
@@ -250,5 +250,90 @@ describe('CLI — report', () => {
     const result = run(['report', 'FIX-9401']);
     assert.strictEqual(result.code, 1);
     assert.match(result.stdout, /PENDIENTE/);
+  });
+});
+
+describe('CLI — init and doctor', () => {
+  test('init creates the project files and is idempotent', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-cli-init-'));
+    try {
+      const first = run(['init', '--json'], { cwd: root });
+      assert.strictEqual(first.code, 0);
+      assert.ok(fs.existsSync(path.join(root, '.sdd', 'config.json')));
+      assert.ok(fs.existsSync(path.join(root, 'contracts')));
+      assert.ok(fs.existsSync(path.join(root, 'CONSTITUTION.md')));
+
+      const second = run(['init', '--json'], { cwd: root });
+      const data = JSON.parse(second.stdout);
+      assert.deepStrictEqual(data.created, []);
+      assert.ok(data.skipped.length >= 3);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test('init --private writes each ignore line only once', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-cli-private-'));
+    try {
+      run(['init', '--private'], { cwd: root });
+      run(['init', '--private'], { cwd: root });
+
+      const gitignore = fs.readFileSync(path.join(root, '.gitignore'), 'utf8');
+      assert.strictEqual(gitignore.match(/^contracts\/\*$/gm).length, 1);
+      assert.strictEqual(gitignore.match(/^\.sdd\/$/gm).length, 1);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test('doctor reports no failures on an empty project', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-cli-doctor-'));
+    try {
+      const result = run(['doctor', '--json'], { cwd: root });
+      const data = JSON.parse(result.stdout);
+      assert.strictEqual(result.code, 0);
+      assert.strictEqual(data.ok, true);
+      assert.ok(data.checks.some(check => check.name === 'mcp'));
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test('doctor fails on an invalid configuration', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-cli-doctor-bad-'));
+    try {
+      fs.mkdirSync(path.join(root, '.sdd'), { recursive: true });
+      fs.writeFileSync(path.join(root, '.sdd', 'config.json'), '{ nope', 'utf8');
+
+      const result = run(['doctor', '--json'], { cwd: root });
+      const data = JSON.parse(result.stdout);
+
+      assert.strictEqual(result.code, 1);
+      assert.strictEqual(data.ok, false);
+      assert.ok(data.checks.some(check => check.name === 'config' && check.status === 'FAIL'));
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('CLI — usage attribution', () => {
+  test('CLI calls are counted and attributed to the contract type', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-cli-usage-'));
+    try {
+      run(['init'], { cwd: root });
+      run(['new', 'Corregir algo', '--type', 'FIX'], { cwd: root });
+      run(['validate', 'FIX-0001'], { cwd: root });
+      run(['status'], { cwd: root });
+
+      const usage = JSON.parse(fs.readFileSync(path.join(root, '.sdd', 'usage.json'), 'utf8'));
+
+      assert.ok(usage.sources.cli >= 3, 'CLI calls must be counted as CLI');
+      assert.ok(usage.by_type.fix >= 2, 'new --type FIX and validate FIX-0001 are attributed to FIX');
+      assert.strictEqual(usage.cli_commands.validate, 1);
+      assert.strictEqual(usage.cli_commands.status, 1);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
   });
 });

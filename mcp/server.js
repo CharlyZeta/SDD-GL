@@ -91,15 +91,39 @@ function tailOutput(value, limit = 1500) {
 // ---------------------------------------------------------------------------
 
 const METRICS_SCHEMA_VERSION = 1;
-const LAYERS = ['functional', 'static', 'security', 'arch'];
+const DEFAULT_LAYERS = ['functional', 'static', 'security', 'arch'];
+const CONFIG_FILE = path.join(SDD_DIR, 'config.json');
+
+// Verification layers are configurable per project (`.sdd/config.json`).
+// The default keeps the four standard layers.
+function getLayerNames() {
+  try {
+    const config = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+    if (Array.isArray(config.layers) && config.layers.length > 0) {
+      return config.layers.map(String);
+    }
+  } catch (error) {
+    // No config (or unreadable): fall back to the defaults.
+  }
+  return DEFAULT_LAYERS;
+}
+
+const LAYERS = getLayerNames();
 
 function defaultMetrics() {
+  const layerSuccessRates = {};
+  const perLayer = {};
+  for (const layer of LAYERS) {
+    layerSuccessRates[layer] = 0;
+    perLayer[layer] = { steps: 0, pass: 0, fail: 0 };
+  }
+
   return {
     schema_version: METRICS_SCHEMA_VERSION,
     last_updated: null,
     first_pass_quality_rate: 0,
     average_retries: 0,
-    layer_success_rates: { functional: 0, static: 0, security: 0, arch: 0 },
+    layer_success_rates: layerSuccessRates,
     ambiguity_escalation_rate: 0,
     counters: {
       steps_total: 0,
@@ -110,12 +134,7 @@ function defaultMetrics() {
       ambiguities_escalated: 0,
       contracts_resolved: 0
     },
-    per_layer: {
-      functional: { steps: 0, pass: 0, fail: 0 },
-      static: { steps: 0, pass: 0, fail: 0 },
-      security: { steps: 0, pass: 0, fail: 0 },
-      arch: { steps: 0, pass: 0, fail: 0 }
-    }
+    per_layer: perLayer
   };
 }
 
@@ -518,6 +537,9 @@ function defaultUsage() {
     sessions: 0,
     session_log: [],
     clients: {},
+    sources: { mcp: 0, cli: 0 },
+    by_type: { feature: 0, fix: 0, unknown: 0 },
+    cli_commands: {},
     tools: {},
     totals: { calls: 0, errors: 0 }
   };
@@ -557,7 +579,7 @@ function writeUsageAtomic(usage) {
   fs.renameSync(tmp, USAGE_FILE);
 }
 
-function recordToolCall(toolName, succeeded) {
+function recordToolCall(toolName, succeeded, meta = {}) {
   const { usage } = readUsage();
   const now = new Date().toISOString();
 
@@ -566,6 +588,22 @@ function recordToolCall(toolName, succeeded) {
   usage.totals.calls += 1;
   if (!succeeded) usage.totals.errors += 1;
   usage.tools[toolName] = (usage.tools[toolName] || 0) + 1;
+
+  // Origin: MCP client traffic vs the CLI (both are real usage of the methodology).
+  const source = meta.source === 'cli' ? 'cli' : 'mcp';
+  if (!usage.sources) usage.sources = { mcp: 0, cli: 0 };
+  usage.sources[source] = (usage.sources[source] || 0) + 1;
+
+  // Work type: which contracts this invocation was serving.
+  const type = meta.type === 'fix' ? 'fix' : meta.type === 'feature' ? 'feature' : null;
+  if (!usage.by_type) usage.by_type = { feature: 0, fix: 0, unknown: 0 };
+  usage.by_type[type || 'unknown'] = (usage.by_type[type || 'unknown'] || 0) + 1;
+
+  // CLI command breakdown (status/validate/next/report/new).
+  if (meta.command) {
+    if (!usage.cli_commands) usage.cli_commands = {};
+    usage.cli_commands[meta.command] = (usage.cli_commands[meta.command] || 0) + 1;
+  }
 
   // Attribute the call to the most recent session (per-project usage view).
   if (Array.isArray(usage.session_log) && usage.session_log.length > 0) {
@@ -711,14 +749,14 @@ const TOOLS = [
 // Tool handlers
 // Every invocation is counted locally (FEAT-0008). Telemetry is best-effort: a broken
 // ledger must never fail a tool call, but the failure is captured instead of swallowed.
-function handleToolCall(name, args) {
+function handleToolCall(name, args, meta = {}) {
   const result = dispatchToolCall(name, args);
 
   // Telemetry never creates project state: in an uninitialized project a read-only
   // call leaves the directory untouched, and SDD_TELEMETRY=off disables it entirely.
   try {
     if (TELEMETRY_ENABLED && stateDirExists()) {
-      recordToolCall(name, !(result && result.error));
+      recordToolCall(name, !(result && result.error), meta);
     }
   } catch (error) {
     telemetryWarning = error.message;

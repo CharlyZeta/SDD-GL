@@ -128,6 +128,8 @@ function generateDashboard(customRoot, options = {}) {
 
       const totalItems = mapItems.length;
       const passedItems = mapItems.filter(i => i.status === '✅').length;
+      const pendingItems = mapItems.filter(i => i.status === '❌').length;
+      const inProgressItems = mapItems.filter(i => i.status === '⏳').length;
       const progressPct = totalItems > 0 ? Math.round((passedItems / totalItems) * 100) : (statusMatch && statusMatch[1] === 'RESOLVED' ? 100 : 0);
 
       return {
@@ -141,6 +143,8 @@ function generateDashboard(customRoot, options = {}) {
         acCount: uniqueACs.length,
         totalItems,
         passedItems,
+        pendingItems,
+        inProgressItems,
         progressPct,
         mapItems
       };
@@ -162,6 +166,9 @@ function generateDashboard(customRoot, options = {}) {
     totals: { calls: 0, errors: 0 },
     tools: {},
     clients: {},
+    sources: { mcp: 0, cli: 0 },
+    by_type: { feature: 0, fix: 0, unknown: 0 },
+    cli_commands: {},
     sessions: 0,
     session_log: [],
     first_seen: null,
@@ -179,6 +186,9 @@ function generateDashboard(customRoot, options = {}) {
           totals: { calls: 0, errors: 0, ...(parsedUsage.totals || {}) },
           tools: { ...(parsedUsage.tools || {}) },
           clients: { ...(parsedUsage.clients || {}) },
+          sources: { mcp: 0, cli: 0, ...(parsedUsage.sources || {}) },
+          by_type: { feature: 0, fix: 0, unknown: 0, ...(parsedUsage.by_type || {}) },
+          cli_commands: { ...(parsedUsage.cli_commands || {}) },
           sessions: parsedUsage.sessions || 0,
           session_log: Array.isArray(parsedUsage.session_log) ? parsedUsage.session_log : [],
           first_seen: parsedUsage.first_seen || null,
@@ -250,6 +260,30 @@ function generateDashboard(customRoot, options = {}) {
   const activityMax = Math.max(1, ...activity.map(day => day.value));
   const callsPerSession = usage.sessions > 0 ? Math.round((usage.totals.calls / usage.sessions) * 10) / 10 : 0;
   const lastActivity = usage.last_updated ? String(usage.last_updated).slice(0, 16).replace('T', ' ') : null;
+
+  // Origin (MCP client vs CLI) and work type (feature/fix) totals.
+  const totalCalls = usage.totals.calls || 0;
+  const attributedCalls = (usage.sources.mcp || 0) + (usage.sources.cli || 0);
+  const attributedTypes = (usage.by_type.feature || 0) + (usage.by_type.fix || 0) + (usage.by_type.unknown || 0);
+  const sourceShares = {
+    mcp: share(usage.sources.mcp || 0, attributedCalls),
+    cli: share(usage.sources.cli || 0, attributedCalls)
+  };
+  const typeShares = {
+    feature: share(usage.by_type.feature || 0, attributedTypes),
+    fix: share(usage.by_type.fix || 0, attributedTypes),
+    unknown: share(usage.by_type.unknown || 0, attributedTypes)
+  };
+  const unattributedCalls = Math.max(0, totalCalls - attributedCalls);
+  const cliEntries = Object.entries(usage.cli_commands || {}).sort((a, b) => b[1] - a[1]);
+
+  // Pending work declared by the contracts themselves.
+  const pendingContracts = contracts
+    .filter(contract => contract.status !== 'RESOLVED')
+    .sort((a, b) => (b.pendingItems + b.inProgressItems) - (a.pendingItems + a.inProgressItems));
+  const totalPendingItems = pendingContracts.reduce((sum, contract) => sum + contract.pendingItems, 0);
+  const totalInProgress = pendingContracts.reduce((sum, contract) => sum + contract.inProgressItems, 0);
+  const totalOpen = contracts.reduce((sum, contract) => sum + contract.pendingItems + contract.inProgressItems, 0);
 
   // Chart payloads are built from on-disk data only; empty arrays render as "sin datos".
   const chartData = {
@@ -585,6 +619,43 @@ function generateDashboard(customRoot, options = {}) {
         </div>
       </div>
 
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="p-4 rounded-lg bg-black/30 border border-sddBorder space-y-3">
+          <h4 class="text-xs font-bold uppercase text-gray-300 flex items-center gap-1.5">
+            <i data-lucide="plug" class="w-4 h-4 text-sddCyan"></i> Origen del uso
+          </h4>
+          <div class="flex justify-between text-xs text-gray-400">
+            <span>MCP · ${usage.sources.mcp} llamadas</span>
+            <span>CLI · ${usage.sources.cli} llamadas</span>
+          </div>
+          <div class="w-full bg-gray-800 rounded-full h-2 flex overflow-hidden">
+            <div class="bg-sddCyan h-2" style="width: ${sourceShares.mcp}%"></div>
+            <div class="bg-sddPurple h-2" style="width: ${sourceShares.cli}%"></div>
+          </div>
+          <div class="text-[11px] text-gray-500">MCP ${sourceShares.mcp}% · CLI ${sourceShares.cli}%${unattributedCalls > 0 ? ` · ${unattributedCalls} llamada(s) previas sin origen registrado` : ''}</div>
+          ${cliEntries.length > 0
+            ? `<div class="text-[11px] text-gray-500 font-mono">${cliEntries.map(([cmd, count]) => `${cmd}:${count}`).join(' · ')}</div>`
+            : ''}
+        </div>
+
+        <div class="p-4 rounded-lg bg-black/30 border border-sddBorder space-y-3">
+          <h4 class="text-xs font-bold uppercase text-gray-300 flex items-center gap-1.5">
+            <i data-lucide="split" class="w-4 h-4 text-sddEmerald"></i> Tipo de trabajo
+          </h4>
+          <div class="flex justify-between text-xs text-gray-400">
+            <span>FEAT · ${usage.by_type.feature}</span>
+            <span>FIX · ${usage.by_type.fix}</span>
+            <span>sin atribuir · ${usage.by_type.unknown}</span>
+          </div>
+          <div class="w-full bg-gray-800 rounded-full h-2 flex overflow-hidden">
+            <div class="bg-sddCyan h-2" style="width: ${typeShares.feature}%"></div>
+            <div class="bg-sddAmber h-2" style="width: ${typeShares.fix}%"></div>
+            <div class="bg-gray-600 h-2" style="width: ${typeShares.unknown}%"></div>
+          </div>
+          <div class="text-[11px] text-gray-500">Las llamadas se atribuyen al tipo del contrato que estaban resolviendo.</div>
+        </div>
+      </div>
+
       <div class="p-4 rounded-lg bg-black/30 border border-sddBorder">
         <div class="flex items-center justify-between mb-3">
           <h4 class="text-xs font-bold uppercase text-gray-300 flex items-center gap-1.5">
@@ -687,6 +758,47 @@ function generateDashboard(customRoot, options = {}) {
         </div>
 
       </div>
+    </section>
+
+    <!-- PENDING WORK DECLARED BY THE CONTRACTS -->
+    <section class="glass-card p-6 rounded-xl space-y-4">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h3 class="text-base font-bold text-white flex items-center gap-2">
+            <i data-lucide="list-checks" class="w-5 h-5 text-sddAmber"></i> Trabajo pendiente
+          </h3>
+          <p class="text-xs text-gray-400">Contratos que no están RESOLVED y sus ítems abiertos en el Completion Map</p>
+        </div>
+        <span class="text-[11px] px-2.5 py-1 rounded bg-sddAmber/20 text-sddAmber border border-sddAmber/30 font-semibold">
+          ${pendingContracts.length} contrato(s) · ${totalOpen} ítem(s) abiertos${totalInProgress > 0 ? ` · ${totalInProgress} en curso` : ''}
+        </span>
+      </div>
+
+      ${pendingContracts.length === 0
+        ? `<p class="text-sm text-gray-400">Sin pendientes: los ${contracts.length} contrato(s) están RESOLVED.</p>`
+        : `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            ${pendingContracts.map(contract => `
+              <div class="p-4 rounded-lg bg-black/40 border border-sddBorder space-y-3">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-mono font-bold ${contract.id.startsWith('FEAT') ? 'text-sddCyan' : 'text-sddAmber'}">${contract.id}</span>
+                  <span class="text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                    contract.status === 'APPROVED' ? 'bg-sddAmber/20 text-sddAmber border border-sddAmber/30' : 'bg-gray-700 text-gray-300'
+                  }">${contract.status}</span>
+                </div>
+                <h4 class="text-sm font-semibold text-white line-clamp-2">${contract.title}</h4>
+                <div class="flex items-center justify-between text-[11px] text-gray-400">
+                  <span>${contract.pendingItems} pendiente(s)${contract.inProgressItems > 0 ? ` · ${contract.inProgressItems} en curso` : ''}</span>
+                  <span class="font-mono">${contract.progressPct}%</span>
+                </div>
+                <div class="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
+                  <div class="bg-gradient-to-r from-sddCyan to-sddEmerald h-1.5 rounded-full" style="width: ${contract.progressPct}%"></div>
+                </div>
+                <div class="text-[10px] text-gray-500 font-mono">
+                  ${contract.status === 'DRAFT' ? `sdd validate ${contract.id}` : `sdd loop ${contract.id}`}
+                </div>
+              </div>
+            `).join('')}
+          </div>`}
     </section>
 
     <!-- INTERACTIVE CONTRACT EXPLORER -->
