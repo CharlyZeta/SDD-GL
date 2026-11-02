@@ -12,17 +12,24 @@ const { execSync } = require('child_process');
 
 const PROJECT_ROOT = process.env.SDD_PROJECT_ROOT || process.cwd();
 const CONTRACTS_DIR = path.join(PROJECT_ROOT, 'contracts');
-const SDD_RUNS_DIR = path.join(PROJECT_ROOT, '.sdd', 'runs');
-const METRICS_FILE = path.join(PROJECT_ROOT, '.sdd', 'metrics.json');
-const USAGE_FILE = path.join(PROJECT_ROOT, '.sdd', 'usage.json');
+const SDD_DIR = path.join(PROJECT_ROOT, '.sdd');
+const SDD_RUNS_DIR = path.join(SDD_DIR, 'runs');
+const METRICS_FILE = path.join(SDD_DIR, 'metrics.json');
+const USAGE_FILE = path.join(SDD_DIR, 'usage.json');
 
-// Ensure necessary directories exist
-function ensureDirs() {
+// Telemetry can be disabled with SDD_TELEMETRY=off (used by read-only CLI commands).
+const TELEMETRY_ENABLED = process.env.SDD_TELEMETRY !== 'off';
+
+// Read-only tools must NEVER create files in the project (FEAT-0029 BR-004 / AC-005).
+// Only the write paths call this.
+function ensureWritableDirs() {
   if (!fs.existsSync(CONTRACTS_DIR)) fs.mkdirSync(CONTRACTS_DIR, { recursive: true });
   if (!fs.existsSync(SDD_RUNS_DIR)) fs.mkdirSync(SDD_RUNS_DIR, { recursive: true });
-  // Also ensure .sdd/ exists for metrics.json
-  const SDD_DIR = path.join(PROJECT_ROOT, '.sdd');
   if (!fs.existsSync(SDD_DIR)) fs.mkdirSync(SDD_DIR, { recursive: true });
+}
+
+function stateDirExists() {
+  return fs.existsSync(SDD_DIR);
 }
 
 // Pure helper: computes the next correlational contract ID from a list of file names.
@@ -209,16 +216,53 @@ function isContractFullyComplete(text) {
 
 // ---------------------------------------------------------------------------
 // Contract parsing helpers (FEAT-0007: the server is a deterministic ledger)
+//
+// The format is neutral: sections can be written in English or Spanish and the
+// contract type comes from front-matter, the ID or the file name — never from a
+// single hardcoded convention (see the FIX with a `## Pasos` heading).
 // ---------------------------------------------------------------------------
 
-function extractSection(text, heading) {
-  const pattern = new RegExp(`##\\s+${heading}\\s*\\n([\\s\\S]*?)(?=\\n##\\s|$)`);
-  const match = text.match(pattern);
-  return match ? match[1] : '';
+const SECTION_KEYS = {
+  userStory: ['User Story', 'Historia de Usuario'],
+  intent: ['Intent', 'Intencion', 'Intención'],
+  useCase: ['Use Case', 'Caso de Uso'],
+  flow: [
+    'Main Flow',
+    'Flujo Principal',
+    'Reproduction Steps',
+    'Pasos de Reproduccion',
+    'Pasos de Reproducción',
+    'Pasos'
+  ],
+  alternativeFlows: ['Alternative Flows', 'Flujos Alternativos', 'Flujos alternativos'],
+  businessRules: ['Business Rules', 'Reglas de Negocio', 'Reglas de negocio'],
+  acceptanceCriteria: ['Acceptance Criteria', 'Criterios de Aceptacion', 'Criterios de Aceptación'],
+  entities: ['Entities Affected', 'Entidades Afectadas', 'Entidades afectadas'],
+  inferredAssumptions: ['Inferred Assumptions', 'Supuestos Inferidos', 'Supuestos inferidos'],
+  ambiguityLog: ['Ambiguity Log', 'Registro de Ambiguedades', 'Registro de Ambigüedades'],
+  completionMap: ['Completion Map', 'Mapa de Completitud'],
+  definitionOfDone: ['Definition of Done', 'Definicion de Terminado', 'Definición de Terminado']
+};
+
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+// Accepts a section key (aliases resolved) or a literal heading.
+function extractSection(text, keyOrHeading) {
+  const candidates = SECTION_KEYS[keyOrHeading] || [keyOrHeading];
+  for (const heading of candidates) {
+    const pattern = new RegExp(`##\\s+${escapeRegExp(heading)}\\s*\\n([\\s\\S]*?)(?=\\n##\\s|$)`, 'i');
+    const match = text.match(pattern);
+    if (match) return match[1];
+  }
+  return '';
+}
+
+// Counts numbered steps written either as a list (`1. …`) or as a heading
+// (`### 1. …`), both common in real contracts.
 function countNumberedSteps(section) {
-  return (section.match(/^\s*\d+\.\s+\S/gm) || []).length;
+  return (section.match(/^\s*(?:#{2,4}\s*)?\d+\.\s+\S/gm) || []).length;
 }
 
 function collectIds(text, prefix) {
@@ -226,14 +270,68 @@ function collectIds(text, prefix) {
   return [...new Set(matches)];
 }
 
-function collectSectionIds(text, sectionHeading, prefix) {
-  const section = extractSection(text, sectionHeading);
+function collectSectionIds(text, sectionKey, prefix) {
+  const section = extractSection(text, sectionKey);
   return collectIds(section, prefix);
 }
 
+// Parses an optional YAML front-matter block (`--- key: value ---`).
+function parseFrontMatter(text) {
+  const match = (text || '').match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!match) return {};
+
+  const meta = {};
+  for (const line of match[1].split(/\r?\n/)) {
+    const pair = line.match(/^([A-Za-z0-9_-]+)\s*:\s*(.*)$/);
+    if (pair) meta[pair[1].toLowerCase()] = pair[2].trim();
+  }
+  return meta;
+}
+
+// Type resolution order: front-matter -> ID/file prefix -> feature.
+function inferContractType(contractId, text, fileName) {
+  const meta = parseFrontMatter(text);
+  if (meta.type) return String(meta.type).toLowerCase();
+
+  const haystack = `${contractId || ''} ${fileName || ''}`.toUpperCase();
+  if (/(^|[^A-Z])FIX-\d+/.test(haystack)) return 'fix';
+  if (/(^|[^A-Z])FEAT-\d+/.test(haystack)) return 'feature';
+  return 'feature';
+}
+
+function listContractFiles() {
+  if (!fs.existsSync(CONTRACTS_DIR)) return [];
+  return fs
+    .readdirSync(CONTRACTS_DIR, { withFileTypes: true })
+    .filter(entry => entry.isFile() && entry.name.toLowerCase().endsWith('.md'))
+    .map(entry => entry.name);
+}
+
+// Finds a contract by ID regardless of the file naming convention
+// (`FIX-0001.md`, `02-FIX-0002-sdd-gl-ci-verde.md`, etc.).
+function resolveContractFile(contractId) {
+  if (!contractId) return null;
+
+  const files = listContractFiles();
+  const exact = `${contractId}.md`;
+  if (files.includes(exact)) return path.join(CONTRACTS_DIR, exact);
+
+  const byName = files.find(name => name.endsWith(`-${contractId}.md`) || name.startsWith(`${contractId}-`));
+  if (byName) return path.join(CONTRACTS_DIR, byName);
+
+  const idPattern = new RegExp(`^#\\s*ID:\\s*${escapeRegExp(contractId)}\\s*$`, 'm');
+  for (const name of files) {
+    const fullPath = path.join(CONTRACTS_DIR, name);
+    const head = fs.readFileSync(fullPath, 'utf8').slice(0, 600);
+    if (idPattern.test(head)) return fullPath;
+  }
+
+  return null;
+}
+
 function extractCriterionText(text, itemId) {
-  const escaped = itemId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const match = text.match(new RegExp(`^\\s*(?:-|\\d+\\.)\\s*${escaped}:?\\s*(.*)$`, 'm'));
+  const pattern = new RegExp(`^\\s*(?:-|\\d+\\.)\\s*${escapeRegExp(itemId)}:?\\s*(.*)$`, 'm');
+  const match = text.match(pattern);
   return match ? `${itemId}: ${match[1].trim()}` : null;
 }
 
@@ -241,8 +339,8 @@ function extractCriterionText(text, itemId) {
 function buildCompletionMap(text, contractId) {
   const lines = ['# [item-id]|[layer]|[test-id]|[agente]|[status]'];
 
-  const mainFlowSteps = countNumberedSteps(extractSection(text, 'Main Flow'));
-  if (mainFlowSteps > 0) {
+  const flowSteps = countNumberedSteps(extractSection(text, 'flow'));
+  if (flowSteps > 0) {
     const testIdByLayer = {
       functional: `functional-tests:${contractId}-main`,
       static: `static-analysis:${contractId}-main`,
@@ -254,13 +352,13 @@ function buildCompletionMap(text, contractId) {
     }
   }
 
-  for (const af of collectSectionIds(text, 'Alternative Flows', 'AF')) {
+  for (const af of collectSectionIds(text, 'alternativeFlows', 'AF')) {
     lines.push(`# ${af} | functional | unit-test:${contractId}-${af.toLowerCase().replace('-', '')} | tester | ❌`);
   }
-  for (const br of collectSectionIds(text, 'Business Rules', 'BR')) {
+  for (const br of collectSectionIds(text, 'businessRules', 'BR')) {
     lines.push(`# ${br} | functional | unit-test:${contractId}-${br.toLowerCase().replace('-', '')} | tester | ❌`);
   }
-  for (const ac of collectSectionIds(text, 'Acceptance Criteria', 'AC')) {
+  for (const ac of collectSectionIds(text, 'acceptanceCriteria', 'AC')) {
     lines.push(`# ${ac} | functional | assertion:${contractId}-${ac.toLowerCase().replace('-', '')} | tester | ❌`);
   }
 
@@ -313,34 +411,37 @@ function detectContradictions(text) {
 }
 
 // Structural checklist per contract type (BR-002).
-function validateGateStructure(text, contractId) {
-  const isFix = contractId.startsWith('FIX-');
+// The flow section is resolved through aliases, so `## Pasos`, `## Main Flow` and
+// `## Reproduction Steps` are all valid for the same rule.
+function validateGateStructure(text, contractId, fileName) {
+  const type = inferContractType(contractId, text, fileName);
+  const isFix = type === 'fix';
   const issues = [];
-  const flowHeading = isFix ? 'Reproduction Steps' : 'Main Flow';
-  const steps = countNumberedSteps(extractSection(text, flowHeading));
 
-  if (steps < 3) issues.push(`${flowHeading} must have at least 3 numbered steps (found ${steps}).`);
-  if (!isFix && collectSectionIds(text, 'Alternative Flows', 'AF').length < 1) {
+  const steps = countNumberedSteps(extractSection(text, 'flow'));
+  if (steps < 3) issues.push(`Flow section must have at least 3 numbered steps (found ${steps}).`);
+
+  if (!isFix && collectSectionIds(text, 'alternativeFlows', 'AF').length < 1) {
     issues.push('Alternative Flows must declare at least 1 AF-XX or state "ninguno".');
   }
-  if (!isFix && collectSectionIds(text, 'Business Rules', 'BR').length < 1) {
+  if (!isFix && collectSectionIds(text, 'businessRules', 'BR').length < 1) {
     issues.push('Business Rules must declare at least 1 BR-XXX.');
   }
-  if (collectSectionIds(text, 'Acceptance Criteria', 'AC').length < 1) {
+  if (collectSectionIds(text, 'acceptanceCriteria', 'AC').length < 1) {
     issues.push('Acceptance Criteria must declare at least 1 AC-XXX.');
   }
 
-  const ambiguity = extractSection(text, 'Ambiguity Log');
+  const ambiguity = extractSection(text, 'ambiguityLog');
   if ((ambiguity.match(/^\s*-\s*\[ \]/gm) || []).length > 0) {
     issues.push('Ambiguity Log has unresolved items (- [ ]).');
   }
 
-  const assumptions = extractSection(text, 'Inferred Assumptions');
+  const assumptions = extractSection(text, 'inferredAssumptions');
   if (assumptions && (assumptions.match(/^\s*-\s*\[ \]/gm) || []).length > 0) {
     issues.push('Inferred Assumptions has open items (- [ ]).');
   }
 
-  return { isFix, issues };
+  return { type, isFix, issues };
 }
 
 // ---------------------------------------------------------------------------
@@ -527,8 +628,12 @@ const TOOLS = [
 function handleToolCall(name, args) {
   const result = dispatchToolCall(name, args);
 
+  // Telemetry never creates project state: in an uninitialized project a read-only
+  // call leaves the directory untouched, and SDD_TELEMETRY=off disables it entirely.
   try {
-    recordToolCall(name, !(result && result.error));
+    if (TELEMETRY_ENABLED && stateDirExists()) {
+      recordToolCall(name, !(result && result.error));
+    }
   } catch (error) {
     telemetryWarning = error.message;
   }
@@ -537,10 +642,9 @@ function handleToolCall(name, args) {
 }
 
 function dispatchToolCall(name, args) {
-  ensureDirs();
-
   switch (name) {
     case 'sdd_create_contract': {
+      ensureWritableDirs();
       const type = args.type.toUpperCase();
       const files = fs.readdirSync(CONTRACTS_DIR);
       const id = computeNextContractId(files, type);
@@ -593,13 +697,13 @@ ${args.intent || '[Inferred from user description]'}
     }
 
     case 'sdd_validate_gate': {
-      const filepath = path.join(CONTRACTS_DIR, `${args.contract_id}.md`);
-      if (!fs.existsSync(filepath)) {
+      const filepath = resolveContractFile(args.contract_id);
+      if (!filepath) {
         return { error: `Contract ${args.contract_id} not found.` };
       }
       const text = fs.readFileSync(filepath, 'utf8');
-      const isDraft = text.includes('Status: DRAFT');
-      const { isFix, issues } = validateGateStructure(text, args.contract_id);
+      const isDraft = /^# Status:\s*DRAFT\s*$/m.test(text);
+      const { type, isFix, issues } = validateGateStructure(text, args.contract_id, path.basename(filepath));
       const contradictions = detectContradictions(text);
 
       // AF-02 wins over AF-01: a contradiction is reported even when the shape is incomplete.
@@ -609,7 +713,9 @@ ${args.intent || '[Inferred from user description]'}
 
       return {
         contract_id: args.contract_id,
+        contract_file: path.basename(filepath),
         status,
+        type,
         is_draft: isDraft,
         is_fix: isFix,
         missing: issues,
@@ -619,8 +725,9 @@ ${args.intent || '[Inferred from user description]'}
     }
 
     case 'sdd_step_loop': {
-      const filepath = path.join(CONTRACTS_DIR, `${args.contract_id}.md`);
-      if (!fs.existsSync(filepath)) return { error: `Contract ${args.contract_id} not found.` };
+      const filepath = resolveContractFile(args.contract_id);
+      if (!filepath) return { error: `Contract ${args.contract_id} not found.` };
+      ensureWritableDirs();
       let text = fs.readFileSync(filepath, 'utf8');
 
       // AF-01: Contract must be APPROVED + LOOP
@@ -913,8 +1020,9 @@ ${evidence}
     }
 
     case 'sdd_log_ambiguity': {
-      const filepath = path.join(CONTRACTS_DIR, `${args.contract_id}.md`);
-      if (!fs.existsSync(filepath)) return { error: `Contract ${args.contract_id} not found.` };
+      const filepath = resolveContractFile(args.contract_id);
+      if (!filepath) return { error: `Contract ${args.contract_id} not found.` };
+      ensureWritableDirs();
       let text = fs.readFileSync(filepath, 'utf8');
 
       // BR-004: mark the item ❌ in the Completion Map before escalating.
@@ -964,18 +1072,31 @@ ${evidence}
     }
 
     case 'sdd_get_status': {
-      if (!fs.existsSync(CONTRACTS_DIR)) return { contracts: [] };
+      if (!fs.existsSync(CONTRACTS_DIR)) return { total_contracts: 0, contracts: [] };
       const files = fs.readdirSync(CONTRACTS_DIR).filter(f => f.endsWith('.md'));
+
       const summary = files.map(file => {
         const content = fs.readFileSync(path.join(CONTRACTS_DIR, file), 'utf8');
-        const statusMatch = content.match(/# Status: (DRAFT|APPROVED|RESOLVED)/);
-        const modeMatch = content.match(/# Mode: (GATE|LOOP)/);
+        const statusMatch = content.match(/^#\s*Status:\s*(DRAFT|APPROVED|RESOLVED)\s*$/m);
+        const modeMatch = content.match(/^#\s*Mode:\s*(GATE|LOOP)\s*$/m);
+        const idMatch = content.match(/^#\s*ID:\s*(\S+)\s*$/m);
+        const titleMatch = content.match(/^#\s*CONTRACT:\s*(.+)$/m);
+
+        // Progress comes from the Completion Map when it exists.
+        const mapItems = (content.match(/^#\s+[^|\n]+\|[^\n]*\|\s*(?:✅|⏳|❌)\s*$/gm) || []);
+        const done = mapItems.filter(line => line.trim().endsWith('✅')).length;
+
         return {
-          id: file.replace('.md', ''),
+          id: idMatch ? idMatch[1] : file.replace(/\.md$/, ''),
+          file,
+          title: titleMatch ? titleMatch[1].trim() : file.replace(/\.md$/, ''),
+          type: inferContractType(idMatch ? idMatch[1] : file, content, file),
           status: statusMatch ? statusMatch[1] : 'UNKNOWN',
-          mode: modeMatch ? modeMatch[1] : 'UNKNOWN'
+          mode: modeMatch ? modeMatch[1] : 'UNKNOWN',
+          progress: { total: mapItems.length, done }
         };
       });
+
       return { total_contracts: summary.length, contracts: summary };
     }
 

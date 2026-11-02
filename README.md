@@ -351,6 +351,20 @@ Choose a production preset from `presets/` or create a `stack.md` file in your r
 
 ## Usage Guide
 
+### Command line (no MCP client required)
+
+The same core is available as a CLI, so SDD-GL works in a terminal or in CI:
+
+| Command | What it does |
+| :--- | :--- |
+| `sdd status` | every contract with status, mode and Completion Map progress |
+| `sdd new "story"` | creates a contract (`--type FEAT\|FIX`, `--gate EXPRESS\|STRICT`) |
+| `sdd validate <ID>` | Gate checklist + BR↔AC contradictions |
+| `sdd next` | what to do now, based on the project state |
+| `sdd report <ID>` | execution report: map, run logs, metrics and verdict |
+
+Every command accepts `--json` (for CI) and `--root <dir>`. Exit codes are stable: `0` clean, `1` findings, `2` usage error. Read-only commands never create files in the project.
+
 ### Starting a New Feature
 To design and implement a new feature, run:
 ```bash

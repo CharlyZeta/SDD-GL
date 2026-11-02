@@ -114,6 +114,31 @@ claude mcp add sdd-gl -- node ./mcp/server.js
 
 ---
 
+## CLI: usar SDD-GL sin cliente MCP
+
+El binario `sdd` expone el mismo core que el servidor MCP:
+
+```bash
+npx sdd status                 # contratos, estado y progreso del mapa
+npx sdd new "notificaciones por email" --type FEAT
+npx sdd validate FEAT-0001     # checklist de Gate + contradicciones
+npx sdd next                   # qué hacer ahora
+npx sdd report FEAT-0001       # informe de ejecución (mapa + logs + métricas)
+```
+
+- `--json` en todos los comandos, para CI y scripts.
+- `--root <dir>` para inspeccionar otro proyecto sin cambiar de carpeta.
+- Códigos de salida: `0` sin hallazgos, `1` con hallazgos, `2` error de uso.
+- Los comandos de lectura **no crean ni modifican archivos** del proyecto.
+
+Ejemplo de uso en CI:
+
+```bash
+npx sdd validate "$CONTRACT_ID" || exit 1
+```
+
+---
+
 ## Generar el Dashboard Visual Living
 
 Después de tener el servidor funcionando (contratos creados, métricas agregadas), generá tu dashboard **local**:

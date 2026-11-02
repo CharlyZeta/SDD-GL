@@ -101,7 +101,7 @@ describe('FEAT-0007 — Alternative Flows', () => {
     const result = handleToolCall('sdd_validate_gate', { contract_id: 'FEAT-9201' });
 
     assert.strictEqual(result.status, 'INCOMPLETE');
-    assert.ok(result.missing.some(issue => /Main Flow/.test(issue)));
+    assert.ok(result.missing.some(issue => /Flow section/.test(issue)));
     assert.ok(result.missing.some(issue => /Business Rules/.test(issue)));
   });
 
@@ -174,7 +174,7 @@ describe('FEAT-0007 — Business Rules', () => {
     const gate = handleToolCall('sdd_validate_gate', { contract_id: 'FIX-9201' });
 
     assert.strictEqual(gate.is_fix, true);
-    assert.ok(gate.missing.some(issue => /Reproduction Steps/.test(issue)));
+    assert.ok(gate.missing.some(issue => /Flow section/.test(issue)));
     assert.ok(!gate.missing.some(issue => /Business Rules/.test(issue)), 'FIX does not require BR');
   });
 

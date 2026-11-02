@@ -352,6 +352,20 @@ Elige un preset listo para producción desde `presets/` o crea un archivo `stack
 
 ## Guía de Uso
 
+### Línea de comandos (sin cliente MCP)
+
+El mismo core está disponible como CLI, así SDD-GL funciona en una terminal o en CI:
+
+| Comando | Qué hace |
+| :--- | :--- |
+| `sdd status` | todos los contratos con estado, modo y progreso del Completion Map |
+| `sdd new "historia"` | crea un contrato (`--type FEAT\|FIX`, `--gate EXPRESS\|STRICT`) |
+| `sdd validate <ID>` | checklist de Gate + contradicciones BR↔AC |
+| `sdd next` | qué hacer ahora, según el estado del proyecto |
+| `sdd report <ID>` | informe de ejecución: mapa, logs de corridas, métricas y veredicto |
+
+Todos aceptan `--json` (para CI) y `--root <dir>`. Los códigos de salida son estables: `0` sin hallazgos, `1` con hallazgos, `2` error de uso. Los comandos de lectura nunca crean archivos en el proyecto.
+
 ### Iniciar una nueva Funcionalidad (Feature)
 Para iniciar el diseño e implementación de una nueva funcionalidad, ejecuta:
 ```bash
