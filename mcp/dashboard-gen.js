@@ -602,7 +602,7 @@ function generateDashboard(customRoot, options = {}) {
 
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div class="p-3 rounded-lg bg-black/30 border border-sddBorder">
-          <div class="text-[10px] uppercase tracking-wider text-gray-500">Sesiones</div>
+          <div class="text-[10px] uppercase tracking-wider text-gray-500">Sesiones MCP</div>
           <div class="text-xl font-bold text-white">${hasUsage ? usage.sessions : '—'}</div>
         </div>
         <div class="p-3 rounded-lg bg-black/30 border border-sddBorder">
