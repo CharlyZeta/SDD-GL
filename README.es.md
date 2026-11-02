@@ -257,6 +257,17 @@ npm run dashboard:public  # showcase público -> docs/index.html (lee solo examp
 
 El dashboard local nunca se escribe en `docs/`, así los contratos de trabajo y la telemetría no pueden filtrarse a la página publicada por accidente.
 
+### Reproducir la captura de ejemplo
+
+La imagen de arriba sale de un proyecto fixture descartable que ejercita los casos borde (contratos DRAFT/APPROVED/RESOLVED, waivers, contradicciones, presupuesto excedido, dependencias, ítems interrumpidos y telemetría MCP + CLI). Nunca se versiona:
+
+```bash
+node test-sandbox/fixtures/demo-project.js              # lo crea en un directorio temporal
+node test-sandbox/fixtures/demo-project.js ./mi-demo    # o en la ruta que elijas
+```
+
+El script imprime la ruta del proyecto; abrí `.sdd/dashboard.html` dentro de él.
+
 
 
 ---

@@ -256,6 +256,17 @@ npm run dashboard:public  # public showcase -> docs/index.html (reads only examp
 
 The local dashboard never lands in `docs/`, so working contracts and telemetry cannot leak into the published page by accident.
 
+### Reproducing the sample capture
+
+The screenshot above comes from a throw-away fixture project that exercises the edge cases (DRAFT/APPROVED/RESOLVED contracts, waivers, contradictions, budget overflow, dependencies, interrupted items and MCP + CLI telemetry). It is never committed:
+
+```bash
+node test-sandbox/fixtures/demo-project.js              # builds into a temp directory
+node test-sandbox/fixtures/demo-project.js ./my-demo    # or into a path you choose
+```
+
+The script prints the project root; open `.sdd/dashboard.html` inside it.
+
 
 
 ---
