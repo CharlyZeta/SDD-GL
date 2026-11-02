@@ -433,6 +433,29 @@ function detectContradictions(text) {
 // within a budget calibrated on the real corpus (max 9 BR / 8 AC historically).
 const ATOMICITY_BUDGET = { businessRules: 7, acceptanceCriteria: 8, alternativeFlows: 5, steps: 9 };
 
+// Template markers left behind by `sdd create_contract` or `sdd split`.
+const PLACEHOLDER_MARKERS = [
+  '[completar',
+  '[quién]',
+  '[quien]',
+  '[un solo objetivo]',
+  '[beneficio esperado]',
+  '[condition]',
+  '[result]',
+  '[Verifiable invariant]',
+  '[context]',
+  '[action]',
+  '[expected result]',
+  '[Entity]',
+  '[relevant attributes]',
+  '[entidad]',
+  '[invariante verificable]',
+  '[contexto]',
+  '[resultado esperado]',
+  '[condición]',
+  '[condicion]'
+];
+
 // Reports a multi-goal story only when two infinitives are joined by a connector
 // ("crear y aprobar"), which keeps the false-positive rate low in Spanish.
 function detectMultiGoal(storySection) {
@@ -485,6 +508,12 @@ function validateGateStructure(text, contractId, fileName) {
   const isDraft = /^#\s*Status:\s*DRAFT\s*$/m.test(text);
 
   if (isDraft) {
+    const placeholders = PLACEHOLDER_MARKERS.filter(marker => text.includes(marker));
+    if (placeholders.length > 0) {
+      const shown = placeholders.slice(0, 3).join(', ');
+      issues.push(`PLACEHOLDER: the contract still contains template text (${shown}${placeholders.length > 3 ? ', …' : ''}).`);
+    }
+
     const story = extractSection(text, 'userStory');
     if (!story) {
       if (!hasWaiver(ambiguity, 'STORY-OK')) {

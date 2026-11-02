@@ -75,6 +75,7 @@ Comandos:
   approve <ID> --yes     Aprueba el contrato (HO-Gate) con huella del spec
   loop <ID>              Reclama el próximo ítem (--item/--layer; --pass/--fail/--blocked para reportar)
   graph                  Orden de ejecución según depends_on
+  split <ID>             Propone el corte de un contrato sobredimensionado (--write crea borradores)
   sync                   Verifica que cada agente exista en todas las plataformas
   doctor                 Diagnóstico de la instalación
 
@@ -958,6 +959,273 @@ function commandLoop() {
 }
 
 // ---------------------------------------------------------------------------
+// Split: propose the cut of an oversized contract
+// ---------------------------------------------------------------------------
+
+const SPLIT_BUDGET = { businessRules: 7, acceptanceCriteria: 8, alternativeFlows: 5 };
+
+function readCriteria(text) {
+  const lines = text.split(/\r?\n/);
+
+  const section = names => {
+    const start = lines.findIndex(line =>
+      names.some(name => line.trim().toLowerCase() === ('## ' + name).toLowerCase())
+    );
+    if (start === -1) return [];
+    const out = [];
+    for (let index = start + 1; index < lines.length && !lines[index].startsWith('## '); index += 1) {
+      out.push(lines[index]);
+    }
+    return out;
+  };
+
+  const collect = (names, prefix) => section(names)
+    .map(line => line.trim())
+    .filter(line => new RegExp('^- ' + prefix + '-\\d+:').test(line))
+    .map(line => ({ id: line.match(new RegExp(prefix + '-\\d+'))[0], line }));
+
+  const entities = section(['Entities Affected', 'Entidades Afectadas'])
+    .map(line => line.trim())
+    .filter(line => line.startsWith('- '))
+    .map(line => line.slice(2));
+
+  return {
+    businessRules: collect(['Business Rules', 'Reglas de Negocio'], 'BR'),
+    acceptanceCriteria: collect(['Acceptance Criteria', 'Criterios de Aceptación'], 'AC'),
+    alternativeFlows: collect(['Alternative Flows', 'Flujos Alternativos'], 'AF'),
+    entities
+  };
+}
+
+function entityForCriterion(line, entities) {
+  const haystack = line.toLowerCase();
+  const matches = entities.filter(entity => {
+    const raw = entity.split(':')[0].replace(/[`*]/g, '').trim();
+    const name = path.basename(raw).replace(/\.[a-z]+$/, '').toLowerCase();
+    return name.length >= 4 && haystack.includes(name);
+  });
+
+  return matches.length === 1 ? matches[0] : null;
+}
+
+function splitByEntity(criteria) {
+  const groups = new Map();
+  const shared = [];
+
+  const buckets = {
+    businessRules: criteria.businessRules,
+    acceptanceCriteria: criteria.acceptanceCriteria,
+    alternativeFlows: criteria.alternativeFlows
+  };
+
+  for (const [kind, list] of Object.entries(buckets)) {
+    for (const item of list) {
+      const entity = entityForCriterion(item.line, criteria.entities);
+      if (!entity) {
+        shared.push({ kind, item });
+        continue;
+      }
+      if (!groups.has(entity)) {
+        groups.set(entity, { entity, businessRules: [], acceptanceCriteria: [], alternativeFlows: [] });
+      }
+      groups.get(entity)[kind].push(item);
+    }
+  }
+
+  return { groups: [...groups.values()], shared };
+}
+
+function chunkByBudget(criteria) {
+  const total = criteria.businessRules.length + criteria.acceptanceCriteria.length;
+  if (total === 0) return [];
+
+  const parts = Math.max(
+    Math.ceil(criteria.businessRules.length / SPLIT_BUDGET.businessRules),
+    Math.ceil(criteria.acceptanceCriteria.length / SPLIT_BUDGET.acceptanceCriteria),
+    2
+  );
+
+  // Contiguous slices keep related rules together, unlike round-robin.
+  const sliceInto = (list, count) => {
+    const size = Math.ceil(list.length / count) || 1;
+    return Array.from({ length: count }, (_, index) => list.slice(index * size, (index + 1) * size));
+  };
+
+  const brChunks = sliceInto(criteria.businessRules, parts);
+  const acChunks = sliceInto(criteria.acceptanceCriteria, parts);
+  const afChunks = sliceInto(criteria.alternativeFlows, parts);
+
+  return Array.from({ length: parts }, (_, index) => ({
+    businessRules: brChunks[index] || [],
+    acceptanceCriteria: acChunks[index] || [],
+    alternativeFlows: afChunks[index] || []
+  })).filter(chunk =>
+    chunk.businessRules.length + chunk.acceptanceCriteria.length + chunk.alternativeFlows.length > 0
+  );
+}
+
+function buildSplitPlan(contractId) {
+  const source = readContract(contractId);
+  if (!source) return null;
+
+  const text = source.text;
+  const criteria = readCriteria(text);
+  const overBudget =
+    criteria.businessRules.length > SPLIT_BUDGET.businessRules ||
+    criteria.acceptanceCriteria.length > SPLIT_BUDGET.acceptanceCriteria ||
+    criteria.alternativeFlows.length > SPLIT_BUDGET.alternativeFlows;
+
+  const byEntity = splitByEntity(criteria);
+  let reason = null;
+  let parts = [];
+
+  if (byEntity.groups.length >= 2) {
+    reason = 'multi-component';
+    parts = byEntity.groups.map(group => ({ ...group }));
+    // Shared criteria travel with the first part so nothing is lost.
+    for (const entry of byEntity.shared) parts[0][entry.kind].push(entry.item);
+  } else if (overBudget) {
+    reason = 'budget';
+    parts = chunkByBudget(criteria).map(chunk => ({ entity: null, ...chunk }));
+  }
+
+  return {
+    contract_id: contractId,
+    file: source.file,
+    status: (text.match(/^#\s*Status:\s*(\w+)/m) || [])[1] || 'UNKNOWN',
+    counts: {
+      businessRules: criteria.businessRules.length,
+      acceptanceCriteria: criteria.acceptanceCriteria.length,
+      alternativeFlows: criteria.alternativeFlows.length,
+      entities: criteria.entities.length
+    },
+    overBudget,
+    reason,
+    parts
+  };
+}
+
+function nextIds(type, count) {
+  const { computeNextContractId } = require('../mcp/server.js');
+  const contractsDir = path.join(ROOT, 'contracts');
+  const files = fs.existsSync(contractsDir) ? fs.readdirSync(contractsDir) : [];
+
+  const ids = [];
+  for (let index = 0; index < count; index += 1) {
+    ids.push(computeNextContractId([...files, ...ids.map(item => `${item}.md`)], type));
+  }
+  return ids;
+}
+
+function renderSplitPlan(plan, ids) {
+  const lines = [];
+  lines.push(`${plan.contract_id} — ${plan.counts.businessRules} BR · ${plan.counts.acceptanceCriteria} AC · ${plan.counts.alternativeFlows} AF · ${plan.counts.entities} entidad(es)`);
+  lines.push(`Motivo: ${plan.reason === 'multi-component' ? 'toca varios componentes' : 'excede el presupuesto'}${plan.overBudget ? ' (sobre presupuesto)' : ''}`);
+  lines.push('');
+  lines.push(`Propuesta: ${plan.parts.length} contrato(s)`);
+
+  plan.parts.forEach((part, index) => {
+    const label = part.entity ? part.entity.split(':')[0].replace(/[`*]/g, '').trim() : `parte ${index + 1}`;
+    lines.push('');
+    lines.push(`  ${ids[index]}  ${label}`);
+    if (part.businessRules.length) lines.push(`    BR: ${part.businessRules.map(item => item.id).join(', ')}`);
+    if (part.acceptanceCriteria.length) lines.push(`    AC: ${part.acceptanceCriteria.map(item => item.id).join(', ')}`);
+    if (part.alternativeFlows.length) lines.push(`    AF: ${part.alternativeFlows.map(item => item.id).join(', ')}`);
+  });
+
+  lines.push('');
+  lines.push('Cada parte conserva la User Story del padre y necesita una propia antes de aprobarse.');
+  lines.push('Agregá --write para crear los borradores.');
+  return lines.join('\n');
+}
+
+function commandSplit() {
+  const contractId = positional[1];
+  if (!contractId) fail('falta el ID del contrato (sdd split <ID>)');
+
+  const plan = buildSplitPlan(contractId);
+  if (!plan) fail(`contrato ${contractId} no encontrado`);
+
+  if (!plan.reason) {
+    if (wantsJson) {
+      console.log(JSON.stringify({ contract_id: contractId, needs_split: false, counts: plan.counts }, null, 2));
+    } else {
+      console.log(`✅ ${contractId} ya es atómico: ${plan.counts.businessRules} BR, ${plan.counts.acceptanceCriteria} AC, ${plan.counts.alternativeFlows} AF, ${plan.counts.entities} entidad(es).`);
+    }
+    return 0;
+  }
+
+  const type = /^FIX/i.test(plan.file) || /^FIX-/i.test(contractId) ? 'FIX' : 'FEAT';
+  const ids = nextIds(type, plan.parts.length);
+
+  if (wantsJson) {
+    console.log(JSON.stringify({ ...plan, needs_split: true, proposed_ids: ids }, null, 2));
+  } else {
+    console.log(renderSplitPlan(plan, ids));
+  }
+
+  if (!args.includes('--write')) return 0;
+
+  const parent = readContract(contractId);
+  const gateMode = (parent.text.match(/^#\s*Gate-Mode:\s*(\w+)/m) || [])[1] || 'STRICT';
+
+  plan.parts.forEach((part, index) => {
+    const id = ids[index];
+    const label = part.entity ? part.entity.split(':')[0].replace(/[`*]/g, '').trim() : `parte ${index + 1} de ${plan.parts.length}`;
+    const body = `# CONTRACT: ${label}
+# ID: ${id}
+# Status: DRAFT
+# Mode: GATE
+# Gate-Mode: ${gateMode}
+# Split-From: ${contractId}
+
+## Intent
+Parte ${index + 1} de ${plan.parts.length} del contrato ${contractId}: ${label}.
+
+## User Story
+- Como: [completar]
+- Quiero: ${label}
+- Para: [completar]
+
+## Use Case
+**Actor:** [completar]
+**Goal:** ${label}
+
+### Main Flow
+1. [completar el flujo de esta parte]
+2. [completar]
+3. [completar]
+
+### Alternative Flows
+${part.alternativeFlows.length ? part.alternativeFlows.map(item => item.line).join('\n') : '- AF-01: [condición] -> [resultado]'}
+
+## Business Rules
+${part.businessRules.length ? part.businessRules.map(item => item.line).join('\n') : '- BR-001: [invariante verificable]'}
+
+## Acceptance Criteria
+${part.acceptanceCriteria.length ? part.acceptanceCriteria.map(item => item.line).join('\n') : '- AC-001: GIVEN [contexto] WHEN [acción] THEN [resultado esperado]'}
+
+## Entities Affected
+${part.entity ? `- ${part.entity}` : '- [entidad]'}
+
+## Ambiguity Log
+- [x] Ninguno
+`;
+    fs.writeFileSync(path.join(ROOT, 'contracts', `${id}.md`), body, 'utf8');
+  });
+
+  // The parent keeps a trace of the split instead of silently losing the criteria.
+  const splitSection = `\n## Splits\n${ids.map((id, index) => `- ${id}: ${plan.parts[index].entity || `parte ${index + 1}`}`).join('\n')}\n`;
+  const parentText = parent.text.includes('\n## Splits')
+    ? parent.text.replace(/\n## Splits[\s\S]*$/, splitSection)
+    : `${parent.text.trimEnd()}\n${splitSection}`;
+  fs.writeFileSync(parent.path, parentText, 'utf8');
+
+  if (!wantsJson) console.log(`\nBorradores creados: ${ids.join(', ')}`);
+  return 0;
+}
+
+// ---------------------------------------------------------------------------
 // Dispatch
 // ---------------------------------------------------------------------------
 
@@ -978,6 +1246,7 @@ const commands = {
   sync: commandSync,
   loop: commandLoop,
   graph: commandGraph,
+  split: commandSplit,
   init: commandInit,
   doctor: commandDoctor,
   tools: () => {

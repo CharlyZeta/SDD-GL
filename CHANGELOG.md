@@ -112,3 +112,11 @@
 - **`sdd loop <ID>`**: drives the Loop from the terminal over the same ledger: with no flag it claims the next item (persists the in-progress marker and hands the criterion, agent and test id to the agent); `--pass --evidence "..."` / `--fail --evidence "..."` record the outcome; `--blocked "reason"` logs the ambiguity and returns the contract to DRAFT/GATE.
 - **`sdd graph`**: reads `depends_on` (front-matter or a `## Depends On` section), prints the topological order, the contracts ready to advance, cycles and dependencies that do not exist. `sdd next` now refuses to suggest a contract whose dependency is still pending.
 - **Agent frontmatter**: `solve-agent.md` and `verifier-agent.md` now declare `name`/`description`/`tools`/`model`, so `sdd doctor` reports a clean agent check.
+
+## [0.5.3] — 2026-11-02
+
+### Added — `sdd split` and the placeholder guard
+
+- **`sdd split <ID>`**: proposes the cut of a contract that is not atomic. It groups criteria by the entity they mention when the contract touches several components, and otherwise splits contiguous blocks within the size budget (7 BR / 8 AC / 5 AF). Prints the proposed IDs, keeps a `## Splits` trace in the parent and, with `--write`, creates the DRAFT stubs with the assigned criteria for a human to complete.
+- **Placeholder guard**: a DRAFT that still contains template text (`[completar]`, `[context]`, `[Verifiable invariant]`, …) is reported as `PLACEHOLDER` and cannot be approved, so a fresh `sdd new` is no longer approvable until it is filled in.
+- **Tests**: split by budget, split by component, atomic detection and `--write` (6), plus the placeholder guard exercised through the CLI.

@@ -2,7 +2,7 @@
 
 ![SDD-GL Portada](assets/sdd-gl-cover.png)
 
-[![Version](https://img.shields.io/badge/version-0.5.2-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.5.3-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![MCP Protocol](https://img.shields.io/badge/MCP-Protocol%20Ready-purple)](mcp/sdd-gl-mcp-spec.md)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-orange)](https://docs.claude.ai/code)
@@ -378,6 +378,7 @@ El mismo core está disponible como CLI, así SDD-GL funciona en una terminal o 
 | `sdd loop <ID>` | reclama el próximo ítem y entrega su contexto al agente (`--pass`/`--fail`/`--blocked` para reportar) |
 | `sdd graph` | orden de ejecución según `depends_on`, ciclos y dependencias inexistentes |
 | `sdd approve <ID> --yes` | HO-Gate desde la terminal: registra aprobador, fecha y hash del spec |
+| `sdd split <ID>` | propone el corte de un contrato sobredimensionado (`--write` crea los borradores) |
 | `sdd sync` | verifica que cada agente exista en todos los adaptadores de plataforma |
 | `sdd report <ID>` | informe de ejecución: mapa, eventos de corrida, métricas y veredicto |
 
@@ -751,11 +752,10 @@ Ciclo 3: AC-001 ✅, AC-002 ✅, AC-003 ✅ → Estado final: RESOLVED
 - No garantiza la idoneidad ni calidad de las pruebas si el contrato de origen posee fallos lógicos o está mal redactado.
 - Requiere de un runtime compatible (como Claude Code o Antigravity CLI) para ejecutar los flujos del agente.
 
-### Limitaciones Conocidas (Versión 0.5.2)
+### Limitaciones Conocidas (Versión 0.5.3)
 * **El mapa no se reconcilia con ediciones manuales**: se construye una vez al iniciar el Loop. Si el contrato cambia con el Loop activo, el mapa no se resincroniza hasta el ciclo siguiente. La invalidación por criterio está planificada para 0.6.0.
-* **No existe `sdd split`**: el Gate avisa cuando un contrato excede el presupuesto, pero todavía no propone el corte.
 * **No publicado en npm**: el binario `sdd` se distribuye en el repositorio (y vía `npx github:CharlyZeta/SDD-GL`); el paquete no está en el registro.
-* **La captura del dashboard está desactualizada**: `docs/assets/dashboard-sample.png` es anterior a los paneles de origen de uso y trabajo pendiente.
+* **Los borradores del split necesitan una persona**: `sdd split --write` crea los stubs con los criterios asignados, pero la User Story y el Main Flow de cada parte se escriben a mano antes de aprobar.
 
 ---
 
@@ -851,10 +851,11 @@ sdd-gl/
 - [x] **CI** (`.github/workflows/test.yml`): suite, chequeo de 8 tools, handshake stdio y árbol limpio.
 - [x] **Eventos de corrida estructurados**: `.sdd/runs/<ID>/events.ndjson` para informes y analítica futura.
 - [x] **Grafo `depends_on`**: `sdd graph` ordena la ejecución y detecta ciclos; `sdd next` lo respeta.
+- [x] **`sdd split`**: propone el corte de un contrato sobredimensionado por componente o por presupuesto, y `--write` crea los borradores DRAFT.
+- [x] **Guarda de plantilla**: un DRAFT que todavía tiene texto de plantilla (`[completar]`, `[context]`) queda `INCOMPLETE`.
 
 ### Versión 0.6.0 (Próxima)
 
-- [ ] `sdd split`: proponer el corte de un contrato sobredimensionado desde `Entities Affected`.
 - [ ] Invalidación por criterio: reabrir solo los ítems cuyo texto de spec cambió.
 - [ ] `sdd-review`: heatmaps de cobertura entre contratos.
 - [ ] Publicar el paquete (con el binario `sdd`) en npm.

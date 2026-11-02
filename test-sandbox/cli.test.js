@@ -470,7 +470,33 @@ describe('CLI — loop from the terminal', () => {
   function approvedProject() {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-cli-loop-'));
     run(['init'], { cwd: root });
-    run(['new', 'Corregir el redondeo', '--type', 'FIX'], { cwd: root });
+
+    // A template straight from `sdd new` is not approvable (placeholders), so the
+    // fixture writes a completed contract and approves it through the CLI.
+    fs.mkdirSync(path.join(root, 'contracts'), { recursive: true });
+    fs.writeFileSync(path.join(root, 'contracts', 'FIX-0001.md'), `# CONTRACT: Corregir el redondeo
+# ID: FIX-0001
+# Status: DRAFT
+# Mode: GATE
+# Gate-Mode: EXPRESS
+
+## User Story
+- Como: comprador
+- Quiero: pagar exactamente lo que veo
+- Para: no pagar de más
+
+## Pasos
+1. Se calcula el total.
+2. Se redondea a dos decimales.
+3. Se envía al proveedor.
+
+## Criterios de Aceptación
+- AC-001: GIVEN un carrito WHEN se calcula THEN el total es 100.00
+
+## Registro de Ambigüedades
+- [x] Ninguna
+`, 'utf8');
+
     run(['approve', 'FIX-0001', '--yes'], { cwd: root });
     return root;
   }
