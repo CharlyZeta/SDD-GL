@@ -2,7 +2,7 @@
 
 ![SDD-GL Portada](assets/sdd-gl-cover.png)
 
-[![Version](https://img.shields.io/badge/version-0.5.3-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.5.4-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![MCP Protocol](https://img.shields.io/badge/MCP-Protocol%20Ready-purple)](mcp/sdd-gl-mcp-spec.md)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-orange)](https://docs.claude.ai/code)
@@ -379,6 +379,7 @@ El mismo core está disponible como CLI, así SDD-GL funciona en una terminal o 
 | `sdd graph` | orden de ejecución según `depends_on`, ciclos y dependencias inexistentes |
 | `sdd approve <ID> --yes` | HO-Gate desde la terminal: registra aprobador, fecha y hash del spec |
 | `sdd split <ID>` | propone el corte de un contrato sobredimensionado (`--write` crea los borradores) |
+| `sdd reconcile <ID>` | reabre solo los ítems cuyo criterio cambió en el spec |
 | `sdd sync` | verifica que cada agente exista en todos los adaptadores de plataforma |
 | `sdd report <ID>` | informe de ejecución: mapa, eventos de corrida, métricas y veredicto |
 
@@ -752,10 +753,10 @@ Ciclo 3: AC-001 ✅, AC-002 ✅, AC-003 ✅ → Estado final: RESOLVED
 - No garantiza la idoneidad ni calidad de las pruebas si el contrato de origen posee fallos lógicos o está mal redactado.
 - Requiere de un runtime compatible (como Claude Code o Antigravity CLI) para ejecutar los flujos del agente.
 
-### Limitaciones Conocidas (Versión 0.5.3)
-* **El mapa no se reconcilia con ediciones manuales**: se construye una vez al iniciar el Loop. Si el contrato cambia con el Loop activo, el mapa no se resincroniza hasta el ciclo siguiente. La invalidación por criterio está planificada para 0.6.0.
+### Limitaciones Conocidas (Versión 0.5.4)
 * **No publicado en npm**: el binario `sdd` se distribuye en el repositorio (y vía `npx github:CharlyZeta/SDD-GL`); el paquete no está en el registro.
 * **Los borradores del split necesitan una persona**: `sdd split --write` crea los stubs con los criterios asignados, pero la User Story y el Main Flow de cada parte se escriben a mano antes de aprobar.
+* **La reconciliación es textual**: el hash cubre el texto normalizado del criterio, así que reformular una regla sin cambiar su significado también reabre el ítem.
 
 ---
 
@@ -853,10 +854,10 @@ sdd-gl/
 - [x] **Grafo `depends_on`**: `sdd graph` ordena la ejecución y detecta ciclos; `sdd next` lo respeta.
 - [x] **`sdd split`**: propone el corte de un contrato sobredimensionado por componente o por presupuesto, y `--write` crea los borradores DRAFT.
 - [x] **Guarda de plantilla**: un DRAFT que todavía tiene texto de plantilla (`[completar]`, `[context]`) queda `INCOMPLETE`.
+- [x] **Invalidación por criterio**: cada criterio guarda un hash de su texto; editar una regla reabre solo ese ítem, una regla nueva se agrega y una eliminada se quita. Un cambio en el Main Flow reinicia sus cuatro filas de capa.
 
 ### Versión 0.6.0 (Próxima)
 
-- [ ] Invalidación por criterio: reabrir solo los ítems cuyo texto de spec cambió.
 - [ ] `sdd-review`: heatmaps de cobertura entre contratos.
 - [ ] Publicar el paquete (con el binario `sdd`) en npm.
 

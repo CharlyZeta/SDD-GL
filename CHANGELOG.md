@@ -120,3 +120,12 @@
 - **`sdd split <ID>`**: proposes the cut of a contract that is not atomic. It groups criteria by the entity they mention when the contract touches several components, and otherwise splits contiguous blocks within the size budget (7 BR / 8 AC / 5 AF). Prints the proposed IDs, keeps a `## Splits` trace in the parent and, with `--write`, creates the DRAFT stubs with the assigned criteria for a human to complete.
 - **Placeholder guard**: a DRAFT that still contains template text (`[completar]`, `[context]`, `[Verifiable invariant]`, …) is reported as `PLACEHOLDER` and cannot be approved, so a fresh `sdd new` is no longer approvable until it is filled in.
 - **Tests**: split by budget, split by component, atomic detection and `--write` (6), plus the placeholder guard exercised through the CLI.
+
+## [0.5.4] — 2026-11-03
+
+### Added — per-criterion invalidation
+
+- **Criterion hashes**: every AF/BR/AC keeps a normalized-text hash in `.sdd/state/<ID>.json`, and the Main Flow keeps one hash covering its steps.
+- **Reconciliation**: when the spec changes, only the affected items are re-opened. An edited rule goes back to `❌`, a new rule is appended as `❌`, a deleted one is removed from the map, and a change in the Main Flow resets its four layer rows. Whitespace-only edits do not invalidate anything.
+- **Automatic**: `sdd_step_loop` reconciles before claiming, so the map can never drift from the approved spec. The same behaviour is exposed explicitly through `sdd reconcile <ID>` (`--json` for tooling).
+- **Tests**: single criterion, whitespace, additions, removals, Main Flow, Loop integration, CLI and state file (8).

@@ -7,6 +7,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const readline = require('readline');
 const { execSync } = require('child_process');
 
@@ -14,6 +15,7 @@ const PROJECT_ROOT = process.env.SDD_PROJECT_ROOT || process.cwd();
 const CONTRACTS_DIR = path.join(PROJECT_ROOT, 'contracts');
 const SDD_DIR = path.join(PROJECT_ROOT, '.sdd');
 const SDD_RUNS_DIR = path.join(SDD_DIR, 'runs');
+const STATE_DIR = path.join(SDD_DIR, 'state');
 const METRICS_FILE = path.join(SDD_DIR, 'metrics.json');
 const USAGE_FILE = path.join(SDD_DIR, 'usage.json');
 
@@ -382,6 +384,209 @@ function buildCompletionMap(text, contractId) {
   }
 
   return lines.length > 1 ? lines.join('\n') : null;
+}
+
+// ---------------------------------------------------------------------------
+// Per-criterion state (reconciliation when the spec changes)
+//
+// Every criterion keeps a hash of its normalized text. When the contract is
+// edited after approval, only the items whose own criterion changed are reset;
+// the rest keep their verified state.
+// ---------------------------------------------------------------------------
+
+function contractStatePath(contractId) {
+  const safe = String(contractId).replace(/[^\w.-]/g, '_');
+  return path.join(STATE_DIR, `${safe}.json`);
+}
+
+function readContractState(contractId) {
+  const file = contractStatePath(contractId);
+  if (!fs.existsSync(file)) return { schema_version: 1, contract: contractId, criteria: {} };
+
+  try {
+    const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
+    return {
+      schema_version: 1,
+      contract: contractId,
+      criteria: parsed && typeof parsed.criteria === 'object' ? parsed.criteria : {}
+    };
+  } catch (error) {
+    return { schema_version: 1, contract: contractId, criteria: {} };
+  }
+}
+
+function writeContractState(contractId, criteria) {
+  if (!fs.existsSync(STATE_DIR)) fs.mkdirSync(STATE_DIR, { recursive: true });
+
+  const file = contractStatePath(contractId);
+  const payload = {
+    schema_version: 1,
+    contract: contractId,
+    updated_at: new Date().toISOString(),
+    criteria
+  };
+  const tmp = `${file}.tmp-${process.pid}`;
+  fs.writeFileSync(tmp, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+  fs.renameSync(tmp, file);
+}
+
+// Whitespace-normalized hash: re-indenting does not invalidate, rewording does.
+function hashCriterion(value) {
+  return crypto
+    .createHash('sha256')
+    .update(String(value).replace(/\s+/g, ' ').trim())
+    .digest('hex')
+    .slice(0, 16);
+}
+
+function computeCriteriaHashes(text) {
+  const hashes = {};
+
+  const flow = extractSection(text, 'flow');
+  if (countNumberedSteps(flow) > 0) hashes['Main Flow'] = hashCriterion(flow);
+
+  const sections = [
+    ['alternativeFlows', 'AF'],
+    ['businessRules', 'BR'],
+    ['acceptanceCriteria', 'AC']
+  ];
+
+  for (const [key, prefix] of sections) {
+    for (const line of extractSection(text, key).split('\n')) {
+      const match = line.match(new RegExp(`^\\s*-\\s*(${prefix}-\\d+):\\s*(.*)$`));
+      if (match) hashes[match[1]] = hashCriterion(match[2]);
+    }
+  }
+
+  return hashes;
+}
+
+function parseCompletionMap(text) {
+  const match = text.match(/##\s*Completion Map\n([\s\S]*?)(?=\n##\s|(?![\s\S]))/);
+  if (!match) return null;
+
+  const lines = match[1].split('\n');
+  const header = lines.find(line => line.includes('[item-id]')) || '# [item-id]|[layer]|[test-id]|[agente]|[status]';
+  const rows = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith('# ') || !trimmed.includes('|') || trimmed.includes('[item-id]')) continue;
+
+    const parts = trimmed.split('|').map(part => part.trim());
+    const hasLayerColumn = parts.length >= 5;
+    rows.push({
+      raw: line,
+      name: parts[0].replace(/^#\s*/, ''),
+      layer: hasLayerColumn ? parts[1] : 'functional',
+      testId: hasLayerColumn ? parts[2] : parts[1],
+      agent: hasLayerColumn ? parts[3] : parts[2],
+      status: parts[parts.length - 1],
+      hasLayerColumn
+    });
+  }
+
+  return { match, header, rows };
+}
+
+function mapRow(name, layer, testId, agent) {
+  return `# ${name} | ${layer} | ${testId} | ${agent} | ❌`;
+}
+
+function buildRowsForCriterion(name, contractId) {
+  if (name === 'Main Flow') {
+    return [
+      mapRow('Main Flow', 'functional', `functional-tests:${contractId}-main`, 'tester'),
+      mapRow('Main Flow', 'static', `static-analysis:${contractId}-main`, 'verifier'),
+      mapRow('Main Flow', 'security', `security-scan:${contractId}-main`, 'verifier'),
+      mapRow('Main Flow', 'arch', `arch-guard:${contractId}-main`, 'verifier')
+    ];
+  }
+
+  const slug = name.toLowerCase().replace('-', '');
+  const prefix = name.startsWith('AF') ? 'unit-test' : name.startsWith('BR') ? 'unit-test' : 'assertion';
+  return [mapRow(name, 'functional', `${prefix}:${contractId}-${slug}`, 'tester')];
+}
+
+/**
+ * Reconciles the Completion Map with the current contract text.
+ * Returns the changes applied and whether the file was rewritten.
+ */
+function reconcileContract(contractId) {
+  const filepath = resolveContractFile(contractId);
+  if (!filepath) return { error: `Contract ${contractId} not found.` };
+
+  const text = fs.readFileSync(filepath, 'utf8');
+  const map = parseCompletionMap(text);
+  const current = computeCriteriaHashes(text);
+
+  // Without criteria in the spec there is nothing to reconcile against: leave the
+  // map untouched instead of deleting every row.
+  if (Object.keys(current).length === 0) {
+    return { contract_id: contractId, changed: false, changes: [], reason: 'no-criteria' };
+  }
+
+  if (!map || map.rows.length === 0) {
+    writeContractState(contractId, current);
+    return { contract_id: contractId, changes: [], rebuilt: false, reason: 'no-completion-map' };
+  }
+
+  const stored = readContractState(contractId).criteria;
+  const changes = [];
+  const updatedRows = [];
+  const present = new Set();
+
+  for (const row of map.rows) {
+    present.add(row.name);
+
+    if (!(row.name in current)) {
+      changes.push({ item: row.name, layer: row.layer, change: 'removed' });
+      continue;
+    }
+
+    const isStale = stored[row.name] !== undefined && stored[row.name] !== current[row.name];
+    updatedRows.push({
+      ...row,
+      status: isStale ? '❌' : row.status
+    });
+
+    if (isStale && row.name !== 'Main Flow') {
+      changes.push({ item: row.name, layer: row.layer, change: 'modified' });
+    } else if (isStale && row.name === 'Main Flow' && row.layer === 'functional') {
+      changes.push({ item: row.name, layer: row.layer, change: 'modified' });
+    }
+  }
+
+  const additions = [];
+  for (const name of Object.keys(current)) {
+    if (present.has(name)) continue;
+    additions.push({ item: name, change: 'added' });
+    additions[additions.length - 1].rows = buildRowsForCriterion(name, contractId);
+  }
+
+  const mapChanged = changes.length > 0 || additions.length > 0;
+
+  if (mapChanged) {
+    const lines = [
+      map.header,
+      ...updatedRows.map(row => row.raw.replace(/\|\s*(?:✅|⏳|❌)\s*$/, `| ${row.status}`)),
+      ...additions.flatMap(addition => addition.rows)
+    ];
+    const rebuilt = `## Completion Map\n${lines.join('\n')}`;
+    fs.writeFileSync(filepath, text.replace(map.match[0], rebuilt), 'utf8');
+    changes.push(...additions.map(addition => ({ item: addition.item, change: addition.change })));
+  }
+
+  writeContractState(contractId, current);
+
+  return {
+    contract_id: contractId,
+    changed: mapChanged,
+    changes,
+    modified: changes.filter(change => change.change === 'modified').length,
+    added: changes.filter(change => change.change === 'added').length,
+    removed: changes.filter(change => change.change === 'removed').length
+  };
 }
 
 // Heuristic BR <-> AC contradiction detection (BR-003).
@@ -901,6 +1106,13 @@ ${args.intent || '[Inferred from user description]'}
         };
       }
 
+      // Reconcile the map with the current spec before claiming: only the items
+      // whose own criterion changed go back to ❌.
+      const reconciliation = reconcileContract(args.contract_id);
+      if (reconciliation && reconciliation.changed) {
+        text = fs.readFileSync(filepath, 'utf8');
+      }
+
       // Completion Map: reuse it when present, otherwise build and persist it from the
       // inference table in protocol/contract.md (FEAT-0007 Main Flow step 2).
       const readMapLines = (source) => {
@@ -927,6 +1139,8 @@ ${args.intent || '[Inferred from user description]'}
 
         fs.writeFileSync(filepath, text, 'utf8');
         mapLines = readMapLines(text);
+        // First build: store the baseline hashes so later edits can be reconciled.
+        writeContractState(args.contract_id, computeCriteriaHashes(text));
       }
 
       // Determine column layout from the header line (first map line).
@@ -1444,7 +1658,7 @@ function main() {
   });
 }
 
-module.exports = { TOOLS, handleToolCall, computeNextContractId };
+module.exports = { TOOLS, handleToolCall, computeNextContractId, reconcileContract, computeCriteriaHashes };
 
 if (require.main === module) {
   main();

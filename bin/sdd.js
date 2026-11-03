@@ -76,6 +76,7 @@ Comandos:
   loop <ID>              Reclama el próximo ítem (--item/--layer; --pass/--fail/--blocked para reportar)
   graph                  Orden de ejecución según depends_on
   split <ID>             Propone el corte de un contrato sobredimensionado (--write crea borradores)
+  reconcile <ID>         Reinicia solo los ítems cuyo criterio cambió en el spec
   sync                   Verifica que cada agente exista en todas las plataformas
   doctor                 Diagnóstico de la instalación
 
@@ -1225,6 +1226,32 @@ ${part.entity ? `- ${part.entity}` : '- [entidad]'}
   return 0;
 }
 
+function commandReconcile() {
+  const contractId = positional[1];
+  if (!contractId) fail('falta el ID del contrato (sdd reconcile <ID>)');
+
+  const { reconcileContract } = require('../mcp/server.js');
+  const result = reconcileContract(contractId);
+  if (result.error) fail(result.error);
+
+  if (wantsJson) {
+    console.log(JSON.stringify(result, null, 2));
+    return 0;
+  }
+
+  if (!result.changed) {
+    console.log(`${contractId}: sin cambios — el mapa coincide con el spec.`);
+    return 0;
+  }
+
+  console.log(`${contractId}: ${result.modified} modificado(s) · ${result.added} agregado(s) · ${result.removed} eliminado(s)`);
+  for (const change of result.changes) {
+    console.log(`  ${change.item}${change.layer ? ` (${change.layer})` : ''}: ${change.change}`);
+  }
+  console.log('\nLos ítems reiniciados vuelven a ❌ y se re-ejecutan en el próximo Loop.');
+  return 0;
+}
+
 // ---------------------------------------------------------------------------
 // Dispatch
 // ---------------------------------------------------------------------------
@@ -1247,6 +1274,7 @@ const commands = {
   loop: commandLoop,
   graph: commandGraph,
   split: commandSplit,
+  reconcile: commandReconcile,
   init: commandInit,
   doctor: commandDoctor,
   tools: () => {
