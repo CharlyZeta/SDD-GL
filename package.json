@@ -4,8 +4,8 @@
   "description": "Model Context Protocol (MCP) Server and CLI for Spec-Driven Development (SDD-GL)",
   "main": "mcp/server.js",
   "bin": {
-    "sdd-gl-mcp": "./mcp/server.js",
-    "sdd": "./bin/sdd.js"
+    "sdd-gl-mcp": "mcp/server.js",
+    "sdd": "bin/sdd.js"
   },
   "type": "commonjs",
   "files": [
