@@ -129,3 +129,13 @@
 - **Reconciliation**: when the spec changes, only the affected items are re-opened. An edited rule goes back to `❌`, a new rule is appended as `❌`, a deleted one is removed from the map, and a change in the Main Flow resets its four layer rows. Whitespace-only edits do not invalidate anything.
 - **Automatic**: `sdd_step_loop` reconciles before claiming, so the map can never drift from the approved spec. The same behaviour is exposed explicitly through `sdd reconcile <ID>` (`--json` for tooling).
 - **Tests**: single criterion, whitespace, additions, removals, Main Flow, Loop integration, CLI and state file (8).
+
+## [0.5.5] — 2026-11-04
+
+### Added — `sdd review`
+
+- **Coverage heatmap per contract**: for every contract it prints a bar, the covered/total criteria and the BR/AC split, sorted worst-first so the gaps surface.
+- **Honest scoping**: a criterion counts as covered only when a test file that names the contract cites it in a test title. Contracts that share `BR-001` no longer absorb each other's coverage, and a contract without its own tests is flagged instead of scoring 100%.
+- **`--json`** exposes the corpus, the per-contract breakdown and the orphan list; the exit code is 1 when gaps remain, so it can gate a pipeline.
+- **Configurable**: `.sdd/config.json` accepts `test_dirs` (defaults to `test-sandbox`, `tests`, `test`).
+- **Tests**: scoping isolation, title-only matching, full coverage, exit codes and JSON shape (6).

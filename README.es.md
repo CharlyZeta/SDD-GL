@@ -2,7 +2,7 @@
 
 ![SDD-GL Portada](assets/sdd-gl-cover.png)
 
-[![Version](https://img.shields.io/badge/version-0.5.4-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.5.5-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![MCP Protocol](https://img.shields.io/badge/MCP-Protocol%20Ready-purple)](mcp/sdd-gl-mcp-spec.md)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-orange)](https://docs.claude.ai/code)
@@ -380,6 +380,7 @@ El mismo core está disponible como CLI, así SDD-GL funciona en una terminal o 
 | `sdd approve <ID> --yes` | HO-Gate desde la terminal: registra aprobador, fecha y hash del spec |
 | `sdd split <ID>` | propone el corte de un contrato sobredimensionado (`--write` crea los borradores) |
 | `sdd reconcile <ID>` | reabre solo los ítems cuyo criterio cambió en el spec |
+| `sdd review` | heatmap de cobertura por contrato: qué BR/AC tienen test y cuáles quedan huérfanos |
 | `sdd sync` | verifica que cada agente exista en todos los adaptadores de plataforma |
 | `sdd report <ID>` | informe de ejecución: mapa, eventos de corrida, métricas y veredicto |
 
@@ -854,11 +855,11 @@ sdd-gl/
 - [x] **Grafo `depends_on`**: `sdd graph` ordena la ejecución y detecta ciclos; `sdd next` lo respeta.
 - [x] **`sdd split`**: propone el corte de un contrato sobredimensionado por componente o por presupuesto, y `--write` crea los borradores DRAFT.
 - [x] **Guarda de plantilla**: un DRAFT que todavía tiene texto de plantilla (`[completar]`, `[context]`) queda `INCOMPLETE`.
+- [x] **`sdd review`**: heatmap de cobertura por contrato. Un criterio cuenta solo si un test que nombra el contrato lo cita en su título, así dos contratos que comparten `BR-001` no se absorben la cobertura.
 - [x] **Invalidación por criterio**: cada criterio guarda un hash de su texto; editar una regla reabre solo ese ítem, una regla nueva se agrega y una eliminada se quita. Un cambio en el Main Flow reinicia sus cuatro filas de capa.
 
 ### Versión 0.6.0 (Próxima)
 
-- [ ] `sdd-review`: heatmaps de cobertura entre contratos.
 - [ ] Publicar el paquete (con el binario `sdd`) en npm.
 
 ### Backlog de Ideas

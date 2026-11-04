@@ -77,6 +77,7 @@ Comandos:
   graph                  Orden de ejecución según depends_on
   split <ID>             Propone el corte de un contrato sobredimensionado (--write crea borradores)
   reconcile <ID>         Reinicia solo los ítems cuyo criterio cambió en el spec
+  review                 Cobertura BR/AC por contrato (heatmap sobre el corpus de tests)
   sync                   Verifica que cada agente exista en todas las plataformas
   doctor                 Diagnóstico de la instalación
 
@@ -1253,6 +1254,162 @@ function commandReconcile() {
 }
 
 // ---------------------------------------------------------------------------
+// Review: coverage heatmap across contracts
+// ---------------------------------------------------------------------------
+
+const TEST_EXTENSIONS = ['.js', '.mjs', '.cjs', '.ts', '.tsx', '.java', '.py'];
+
+function configuredTestDirs() {
+  const configPath = path.join(ROOT, '.sdd', 'config.json');
+  if (fs.existsSync(configPath)) {
+    try {
+      const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      if (Array.isArray(config.test_dirs) && config.test_dirs.length > 0) return config.test_dirs;
+    } catch (error) {
+      // Invalid config: fall back to the defaults.
+    }
+  }
+  return ['test-sandbox', 'tests', 'test'];
+}
+
+function collectTestCorpus() {
+  const files = [];
+
+  const walk = dir => {
+    let entries;
+    try {
+      entries = fs.readdirSync(dir, { withFileTypes: true });
+    } catch (error) {
+      return;
+    }
+    for (const entry of entries) {
+      if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue;
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+      } else if (TEST_EXTENSIONS.some(extension => entry.name.endsWith(extension))) {
+        const text = fs.readFileSync(full, 'utf8');
+        const titles = [];
+        for (const match of text.matchAll(/\b(?:test|it|describe)\s*\(\s*['"`]([^'"`]+)['"`]/g)) {
+          titles.push(match[1]);
+        }
+        files.push({ file: path.relative(ROOT, full), text, titles });
+      }
+    }
+  };
+
+  for (const dir of configuredTestDirs()) {
+    const full = path.join(ROOT, dir);
+    if (fs.existsSync(full)) walk(full);
+  }
+
+  return files;
+}
+
+function coverageBar(ratio, width = 14) {
+  const filled = Math.round(ratio * width);
+  return '█'.repeat(filled) + '░'.repeat(width - filled);
+}
+
+function commandReview() {
+  const contractsDir = path.join(ROOT, 'contracts');
+  if (!fs.existsSync(contractsDir)) fail(`no existe ${contractsDir}`);
+
+  const corpus = collectTestCorpus();
+  const rows = [];
+
+  for (const file of fs.readdirSync(contractsDir).filter(name => name.toLowerCase().endsWith('.md'))) {
+    const text = fs.readFileSync(path.join(contractsDir, file), 'utf8');
+    const id = (text.match(/^#\s*ID:\s*(\S+)\s*$/m) || [])[1] || file.replace(/\.md$/, '');
+    const status = (text.match(/^#\s*Status:\s*(\w+)\s*$/m) || [])[1] || 'UNKNOWN';
+    const criteria = readCriteria(text);
+
+    const items = [
+      ...criteria.businessRules.map(item => ({ kind: 'BR', id: item.id })),
+      ...criteria.acceptanceCriteria.map(item => ({ kind: 'AC', id: item.id }))
+    ];
+    if (items.length === 0) continue;
+
+    // A test only counts for this contract when the file names the contract, so
+    // two contracts sharing `BR-001` do not absorb each other's coverage.
+    const scoped = corpus.filter(entry => new RegExp(`\\b${id}\\b`).test(entry.text));
+    const scopedTitles = scoped.flatMap(entry => entry.titles).join('\n');
+
+    const covered = items.filter(item =>
+      scoped.length > 0 && new RegExp(`\\b${item.id}\\b`).test(scopedTitles)
+    );
+    const orphans = items.filter(item => !covered.includes(item));
+
+    rows.push({
+      id,
+      status,
+      scoped: scoped.length > 0,
+      scopedFiles: scoped.length,
+      total: items.length,
+      covered: covered.length,
+      brTotal: criteria.businessRules.length,
+      brCovered: covered.filter(item => item.kind === 'BR').length,
+      acTotal: criteria.acceptanceCriteria.length,
+      acCovered: covered.filter(item => item.kind === 'AC').length,
+      orphans: orphans.map(item => item.id)
+    });
+  }
+
+  rows.sort((a, b) => (a.covered / a.total) - (b.covered / b.total) || a.id.localeCompare(b.id));
+
+  const totalCriteria = rows.reduce((sum, row) => sum + row.total, 0);
+  const totalCovered = rows.reduce((sum, row) => sum + row.covered, 0);
+  const orphanCriteria = rows.flatMap(row => row.orphans.map(orphan => `${row.id}:${orphan}`));
+
+  const payload = {
+    root: ROOT,
+    corpus: { dirs: configuredTestDirs(), files: corpus.length },
+    summary: {
+      contracts: rows.length,
+      criteria: totalCriteria,
+      covered: totalCovered,
+      orphans: totalCriteria - totalCovered,
+      coverage: totalCriteria > 0 ? Math.round((totalCovered / totalCriteria) * 1000) / 10 : 0,
+      unscoped: rows.filter(row => !row.scoped).length
+    },
+    contracts: rows,
+    orphan_specs: orphanCriteria
+  };
+
+  if (wantsJson) {
+    console.log(JSON.stringify(payload, null, 2));
+  } else {
+    if (rows.length === 0) {
+      console.log('No hay contratos con criterios BR/AC.');
+      return 0;
+    }
+
+    console.log(`Cobertura por contrato · corpus: ${corpus.length} archivo(s) en ${configuredTestDirs().join(', ')}\n`);
+    for (const row of rows) {
+      const ratio = row.covered / row.total;
+      const percent = String(Math.round(ratio * 100)).padStart(3);
+      const marker = row.scoped ? '' : '  (sin tests que nombren el contrato)';
+      console.log(
+        `  ${row.id.padEnd(11)} ${coverageBar(ratio)} ${percent}%  ${String(row.covered).padStart(3)}/${String(row.total).padEnd(3)}` +
+        `  BR ${row.brCovered}/${row.brTotal} · AC ${row.acCovered}/${row.acTotal}${marker}`
+      );
+    }
+
+    const percent = payload.summary.coverage;
+    console.log(`\nResumen: ${totalCovered}/${totalCriteria} criterios cubiertos (${percent}%) · ${payload.summary.orphans} huérfanos · ${payload.summary.unscoped} contrato(s) sin tests propios`);
+
+    if (orphanCriteria.length > 0) {
+      const shown = orphanCriteria.slice(0, 12);
+      console.log(`\nHuérfanos: ${shown.join(', ')}${orphanCriteria.length > shown.length ? ` … y ${orphanCriteria.length - shown.length} más` : ''}`);
+    }
+
+    console.log('\nUn criterio cuenta como cubierto solo si un test que nombra el contrato lo cita en su título.');
+  }
+
+  return payload.summary.orphans === 0 ? 0 : 1;
+}
+
+// ---------------------------------------------------------------------------
 // Dispatch
 // ---------------------------------------------------------------------------
 
@@ -1275,6 +1432,7 @@ const commands = {
   graph: commandGraph,
   split: commandSplit,
   reconcile: commandReconcile,
+  review: commandReview,
   init: commandInit,
   doctor: commandDoctor,
   tools: () => {
