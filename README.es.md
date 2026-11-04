@@ -804,6 +804,7 @@ sdd-gl/
 ├── docs/
 │   ├── index.html           ← Dashboard público del showcase (solo examples/, nunca los contratos privados).
 │   ├── INSTALACION.md       ← Instalación paso a paso por plataforma.
+│   ├── DEPLOY.md            ← Checklist de publicación para mantenedores.
 │   └── assets/
 │       └── dashboard-sample.png ← Captura real de un proyecto de ejemplo.
 ├── protocol/
@@ -825,6 +826,8 @@ sdd-gl/
 ├── examples/
 │   └── contracts/           ← Contratos showcase públicos (curados y resueltos).
 ├── contracts/               ← Specs de trabajo locales (gitignored — privadas).
+├── scripts/
+│   └── release.js           ← Sube la versión en manifiestos y badges, y verifica la deriva.
 ├── test-sandbox/            ← 15 suites: core, CLI, métricas, uso, CI, interop y fixtures.
 ├── .claude/
 │   ├── agents/              ← 6 adaptadores de agente (español).

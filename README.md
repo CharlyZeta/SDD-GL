@@ -803,6 +803,7 @@ sdd-gl/
 ├── docs/
 │   ├── index.html           ← Public showcase dashboard (examples/ only, never the private contracts).
 │   ├── INSTALACION.md       ← Step-by-step installation per platform.
+│   ├── DEPLOY.md            ← Release checklist for maintainers.
 │   └── assets/
 │       └── dashboard-sample.png ← Real capture of an example project.
 ├── protocol/
@@ -824,6 +825,8 @@ sdd-gl/
 ├── examples/
 │   └── contracts/           ← Public showcase contracts (curated and resolved).
 ├── contracts/               ← Local working specs (gitignored — private).
+├── scripts/
+│   └── release.js           ← Version bump across manifests and README badges, plus the drift check.
 ├── test-sandbox/            ← 15 suites: core, CLI, metrics, usage, CI, interop and fixtures.
 ├── .claude/
 │   ├── agents/              ← 6 agent adapters (Spanish).

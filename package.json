@@ -36,7 +36,9 @@
     "dashboard:public": "node mcp/dashboard-gen.js --public",
     "fixture": "node test-sandbox/fixtures/demo-project.js",
     "test": "node test-sandbox/id-generation.test.js && node test-sandbox/step-loop.test.js && node test-sandbox/mcp-core.test.js && node test-sandbox/neutral-format.test.js && node test-sandbox/atomicity.test.js && node test-sandbox/metrics.test.js && node test-sandbox/usage.test.js && node test-sandbox/fix-0001-docs.test.js && node test-sandbox/ci-workflow.test.js && node test-sandbox/interop.test.js && node test-sandbox/cli.test.js && node test-sandbox/fixture-project.test.js && node test-sandbox/split.test.js && node test-sandbox/reconcile.test.js && node test-sandbox/review.test.js && node test-sandbox/publish.test.js && node test-sandbox/multilayer-verifier.test.js && node test-sandbox/escrow.test.js && node test-sandbox/mcp-client-e2e.js",
-    "prepublishOnly": "npm test"
+    "prepublishOnly": "npm test && node scripts/release.js --check",
+    "release:check": "node scripts/release.js --check",
+    "release:prepare": "node scripts/release.js"
   },
   "keywords": [
     "mcp",

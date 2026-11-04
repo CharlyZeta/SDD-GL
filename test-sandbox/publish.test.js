@@ -62,6 +62,30 @@ describe('Publish — manifest', () => {
   });
 });
 
+describe('Publish — release consistency', () => {
+  test('manifests, badges and changelog agree on one version', () => {
+    const result = spawnSync(process.execPath, ['scripts/release.js', '--check', '--json'], {
+      cwd: REPO_ROOT,
+      encoding: 'utf8'
+    });
+
+    const report = JSON.parse(result.stdout);
+    assert.strictEqual(result.status, 0, `release check failed: ${report.problems?.join('; ')}`);
+    assert.strictEqual(report.ok, true);
+    assert.strictEqual(report.version, manifest.version);
+  });
+
+  test('the release checklist exists and is linked', () => {
+    const file = path.join(REPO_ROOT, 'docs', 'DEPLOY.md');
+    assert.ok(fs.existsSync(file));
+
+    const text = fs.readFileSync(file, 'utf8');
+    assert.match(text, /npm publish/);
+    assert.match(text, /release\.js/);
+    assert.match(fs.readFileSync(path.join(REPO_ROOT, 'README.md'), 'utf8'), /DEPLOY\.md/);
+  });
+});
+
 describe('Publish — tarball contents', () => {
   test('ships the tool and the protocol', () => {
     const files = pack().files.map(entry => entry.path);
