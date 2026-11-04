@@ -151,3 +151,11 @@
 - **Client snippets**: because there are two bins, every `npx` invocation names the one it wants (`npx -y --package sdd-gl sdd-gl-mcp`); plain `npx sdd-gl` cannot pick a bin.
 - **Safety**: `prepublishOnly` runs the full suite, and a test reads `npm pack --dry-run --json` to assert that private contracts and local state can never ship.
 - **Remaining**: `npm publish` with the owner account.
+
+## [0.6.1] — 2026-11-04
+
+### Changed — published to npm
+
+- **`sdd-gl@0.6.0` is live on npm.** `npm i -g sdd-gl` installs `sdd` (CLI) and `sdd-gl-mcp` (server); `npx -y --package sdd-gl sdd-gl-mcp` runs the server without installing.
+- README (EN/ES) gained the npm badge and a new "Method 0" that installs from the registry, ahead of the GitHub spec method.
+- The `0.0.0-stage` placeholder that npm created for the first publish is deprecated in favour of `>= 0.6.0`.

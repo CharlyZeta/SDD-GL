@@ -2,7 +2,8 @@
 
 ![SDD-GL Cover](assets/sdd-gl-cover.png)
 
-[![Version](https://img.shields.io/badge/version-0.6.0-blue)](CHANGELOG.md)
+[![npm](https://img.shields.io/npm/v/sdd-gl)](https://www.npmjs.com/package/sdd-gl)
+[![Version](https://img.shields.io/badge/version-0.6.1-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![MCP Protocol](https://img.shields.io/badge/MCP-Protocol%20Ready-purple)](mcp/sdd-gl-mcp-spec.md)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-orange)](https://docs.claude.ai/code)
@@ -284,7 +285,30 @@ Follow this step-by-step guide to configure and start using SDD-GL in your prefe
 
 ### 2. Choose Your Installation Method
 
-#### 🌐 Method 1: Universal MCP Server (Cursor, Windsurf, OpenCode, Warp, Claude Desktop, VS Code)
+#### 📦 Method 0: npm package (recommended)
+Published as **`sdd-gl`** on npm — no cloning, no GitHub spec:
+
+```bash
+npm install -g sdd-gl      # installs two commands: sdd (CLI) and sdd-gl-mcp (server)
+sdd --help                 # verify
+```
+
+For an MCP client configuration, point it at the server binary:
+
+```json
+{
+  "mcpServers": {
+    "sdd-gl": {
+      "command": "npx",
+      "args": ["-y", "--package", "sdd-gl", "sdd-gl-mcp"]
+    }
+  }
+}
+```
+
+> A package with two binaries cannot be resolved by package name alone, so `npx` always names the binary: `--package sdd-gl sdd-gl-mcp`.
+
+#### 🌐 Method 1: Universal MCP Server from GitHub (Cursor, Windsurf, OpenCode, Warp, Claude Desktop, VS Code)
 No repository cloning needed. Add the MCP server directly from GitHub to your IDE / terminal client configuration (`~/.cursor/mcp.json`, `claude_desktop_config.json`, OpenCode settings, or Cline MCP settings):
 
 ```json
