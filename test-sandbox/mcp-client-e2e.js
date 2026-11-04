@@ -67,6 +67,9 @@ function runMcpTest() {
       });
       console.log('   ✅ Inicializado:', initRes.result.serverInfo);
       assert.strictEqual(initRes.result.serverInfo.name, 'sdd-gl-mcp-server');
+      // The handshake must report the package version, never a stale literal.
+      const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'));
+      assert.strictEqual(initRes.result.serverInfo.version, manifest.version);
 
       // 2. Tools List
       console.log('\n2️⃣ Solicitando lista de herramientas (tools/list)...');

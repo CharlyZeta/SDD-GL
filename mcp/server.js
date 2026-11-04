@@ -12,6 +12,13 @@ const readline = require('readline');
 const { execSync } = require('child_process');
 
 const PROJECT_ROOT = process.env.SDD_PROJECT_ROOT || process.cwd();
+const PACKAGE_VERSION = (() => {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8')).version || '0.0.0';
+  } catch (error) {
+    return '0.0.0';
+  }
+})();
 const CONTRACTS_DIR = path.join(PROJECT_ROOT, 'contracts');
 const SDD_DIR = path.join(PROJECT_ROOT, '.sdd');
 const SDD_RUNS_DIR = path.join(SDD_DIR, 'runs');
@@ -1617,7 +1624,7 @@ function main() {
             capabilities: { tools: {} },
             serverInfo: {
               name: 'sdd-gl-mcp-server',
-              version: '0.4.0'
+              version: PACKAGE_VERSION
             }
           }
         };
