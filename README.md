@@ -2,7 +2,7 @@
 
 ![SDD-GL Cover](assets/sdd-gl-cover.png)
 
-[![Version](https://img.shields.io/badge/version-0.5.5-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.6.0-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![MCP Protocol](https://img.shields.io/badge/MCP-Protocol%20Ready-purple)](mcp/sdd-gl-mcp-spec.md)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-orange)](https://docs.claude.ai/code)
@@ -857,9 +857,11 @@ sdd-gl/
 - [x] **`sdd review`**: coverage heatmap per contract. A criterion counts only when a test file that names the contract cites it in a test title, so contracts sharing `BR-001` do not absorb each other's coverage.
 - [x] **Per-criterion invalidation**: every criterion keeps a text hash; editing one rule re-opens only that item, a new rule is appended and a deleted one is dropped. Changes in the Main Flow reset its four layer rows.
 
-### Version 0.6.0 (Next)
+### Version 0.6.0 — Publishable package (Ready)
 
-- [ ] Publish the package (with the `sdd` binary) to npm.
+- [x] Curated `files`, `repository`, `engines` and `publishConfig`; `prepublishOnly` runs the suite before any publish.
+- [x] A test asserts that the tarball ships the tool and never `contracts/`, `.sdd/` or `test-sandbox/`.
+- [ ] Run `npm publish` with the owner account.
 
 ### Ideas Backlog
 - [ ] Native integration with issue tracking systems (GitHub Issues, Linear, Jira).

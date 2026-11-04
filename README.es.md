@@ -2,7 +2,7 @@
 
 ![SDD-GL Portada](assets/sdd-gl-cover.png)
 
-[![Version](https://img.shields.io/badge/version-0.5.5-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.6.0-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![MCP Protocol](https://img.shields.io/badge/MCP-Protocol%20Ready-purple)](mcp/sdd-gl-mcp-spec.md)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-orange)](https://docs.claude.ai/code)
@@ -858,9 +858,11 @@ sdd-gl/
 - [x] **`sdd review`**: heatmap de cobertura por contrato. Un criterio cuenta solo si un test que nombra el contrato lo cita en su título, así dos contratos que comparten `BR-001` no se absorben la cobertura.
 - [x] **Invalidación por criterio**: cada criterio guarda un hash de su texto; editar una regla reabre solo ese ítem, una regla nueva se agrega y una eliminada se quita. Un cambio en el Main Flow reinicia sus cuatro filas de capa.
 
-### Versión 0.6.0 (Próxima)
+### Versión 0.6.0 — Paquete publicable (Listo)
 
-- [ ] Publicar el paquete (con el binario `sdd`) en npm.
+- [x] `files`, `repository`, `engines` y `publishConfig` curados; `prepublishOnly` corre la suite antes de publicar.
+- [x] Un test verifica que el tarball lleve la herramienta y nunca `contracts/`, `.sdd/` ni `test-sandbox/`.
+- [ ] Ejecutar `npm publish` con la cuenta del dueño.
 
 ### Backlog de Ideas
 - [ ] Integración nativa con sistemas de tickets e incidencias (GitHub Issues, Linear, Jira).

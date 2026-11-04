@@ -139,3 +139,13 @@
 - **`--json`** exposes the corpus, the per-contract breakdown and the orphan list; the exit code is 1 when gaps remain, so it can gate a pipeline.
 - **Configurable**: `.sdd/config.json` accepts `test_dirs` (defaults to `test-sandbox`, `tests`, `test`).
 - **Tests**: scoping isolation, title-only matching, full coverage, exit codes and JSON shape (6).
+
+## [0.6.0] — 2026-11-04
+
+### Changed — publishable package
+
+- **Curated surface**: `files` now publishes only `mcp/`, `bin/`, `protocol/`, `presets/` and `docs/INSTALACION.md` — 16 files, 96 KB unpacked 316 KB. `contracts/`, `.sdd/`, `test-sandbox/` and the dashboard build stay out of the tarball.
+- **Metadata**: `repository`, `bugs`, `engines` (Node >= 18) and `publishConfig.access = public` (the scoped package publishes publicly without a flag).
+- **Two entry points**: `sdd-gl-mcp` (the stdio server) and `sdd` (the CLI). The misleading `sdd-gl` alias that also pointed at the server is gone.
+- **Safety**: `prepublishOnly` runs the full suite, and a test reads `npm pack --dry-run --json` to assert that private contracts and local state can never ship.
+- **Remaining**: `npm publish` with the owner account.

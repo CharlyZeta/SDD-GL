@@ -1,21 +1,42 @@
 {
   "name": "@sdd-gl/mcp-server",
-  "version": "0.5.5",
+  "version": "0.6.0",
   "description": "Model Context Protocol (MCP) Server and CLI for Spec-Driven Development (SDD-GL)",
   "main": "mcp/server.js",
   "bin": {
     "sdd-gl-mcp": "./mcp/server.js",
-    "sdd-gl": "./mcp/server.js",
     "sdd": "./bin/sdd.js"
   },
   "type": "commonjs",
+  "files": [
+    "mcp/",
+    "!mcp/package.json",
+    "bin/",
+    "protocol/",
+    "presets/",
+    "docs/INSTALACION.md"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CharlyZeta/SDD-GL.git"
+  },
+  "bugs": {
+    "url": "https://github.com/CharlyZeta/SDD-GL/issues"
+  },
   "scripts": {
     "start": "node mcp/server.js",
     "sdd": "node bin/sdd.js",
     "dashboard": "node mcp/dashboard-gen.js",
     "dashboard:public": "node mcp/dashboard-gen.js --public",
     "fixture": "node test-sandbox/fixtures/demo-project.js",
-    "test": "node test-sandbox/id-generation.test.js && node test-sandbox/step-loop.test.js && node test-sandbox/mcp-core.test.js && node test-sandbox/neutral-format.test.js && node test-sandbox/atomicity.test.js && node test-sandbox/metrics.test.js && node test-sandbox/usage.test.js && node test-sandbox/fix-0001-docs.test.js && node test-sandbox/ci-workflow.test.js && node test-sandbox/interop.test.js && node test-sandbox/cli.test.js && node test-sandbox/fixture-project.test.js && node test-sandbox/split.test.js && node test-sandbox/reconcile.test.js && node test-sandbox/review.test.js && node test-sandbox/multilayer-verifier.test.js && node test-sandbox/escrow.test.js && node test-sandbox/mcp-client-e2e.js"
+    "test": "node test-sandbox/id-generation.test.js && node test-sandbox/step-loop.test.js && node test-sandbox/mcp-core.test.js && node test-sandbox/neutral-format.test.js && node test-sandbox/atomicity.test.js && node test-sandbox/metrics.test.js && node test-sandbox/usage.test.js && node test-sandbox/fix-0001-docs.test.js && node test-sandbox/ci-workflow.test.js && node test-sandbox/interop.test.js && node test-sandbox/cli.test.js && node test-sandbox/fixture-project.test.js && node test-sandbox/split.test.js && node test-sandbox/reconcile.test.js && node test-sandbox/review.test.js && node test-sandbox/publish.test.js && node test-sandbox/multilayer-verifier.test.js && node test-sandbox/escrow.test.js && node test-sandbox/mcp-client-e2e.js",
+    "prepublishOnly": "npm test"
   },
   "keywords": [
     "mcp",
