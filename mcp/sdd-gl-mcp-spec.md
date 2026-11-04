@@ -117,7 +117,7 @@ un comando remoto (`npx`) o exige un binario local.
   "mcpServers": {
     "sdd-gl": {
       "command": "npx",
-      "args": ["-y", "github:CharlyZeta/SDD-GL"]
+      "args": ["-y", "--package", "github:CharlyZeta/SDD-GL", "sdd-gl-mcp"]
     }
   }
 }
@@ -153,7 +153,7 @@ un comando remoto (`npx`) o exige un binario local.
 
 ```bash
 # Remoto (sin clonar el repo)
-claude mcp add sdd-gl -- npx -y github:CharlyZeta/SDD-GL
+claude mcp add sdd-gl -- npx -y --package github:CharlyZeta/SDD-GL sdd-gl-mcp
 
 # Local (desde la raíz de un clon de SDD-GL)
 claude mcp add sdd-gl -- node ./mcp/server.js
@@ -171,7 +171,7 @@ absoluta a `node`.
   "mcpServers": {
     "sdd-gl": {
       "command": "npx",
-      "args": ["-y", "github:CharlyZeta/SDD-GL"]
+      "args": ["-y", "--package", "github:CharlyZeta/SDD-GL", "sdd-gl-mcp"]
     }
   }
 }
@@ -186,7 +186,7 @@ absoluta a `node`.
   "mcp": {
     "sdd-gl": {
       "type": "local",
-      "command": ["npx", "-y", "github:CharlyZeta/SDD-GL"],
+      "command": ["npx", "-y", "--package", "github:CharlyZeta/SDD-GL", "sdd-gl-mcp"],
       "enabled": true
     }
   }
@@ -245,10 +245,10 @@ y no sobrescribe nada fuera de `docs/index.html`.
 ### 4.3 Skill de instalación (`npm install`)
 
 ```bash
-npm install @sdd-gl/mcp-server
+npm install sdd-gl
 ```
 
-Después, el binario queda disponible como `sdd-gl-mcp` (o `sdd-gl`) en `node_modules/.bin/`.
+Después quedan disponibles `sdd-gl-mcp` (el servidor) y `sdd` (la CLI) en `node_modules/.bin/`.
 Referenciá el ejecutable con ruta absoluta en la config del cliente si el `PATH` no lo expone.
 
 ---

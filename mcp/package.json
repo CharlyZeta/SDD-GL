@@ -1,5 +1,5 @@
 {
-  "name": "@sdd-gl/mcp-server",
+  "name": "sdd-gl",
   "version": "0.6.0",
   "description": "Model Context Protocol (MCP) Server for Spec-Driven Development (SDD-GL)",
   "main": "server.js",

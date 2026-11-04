@@ -32,7 +32,10 @@ function pack() {
 }
 
 describe('Publish — manifest', () => {
-  test('the package is public and points at the repository', () => {
+  test('the package is public, unscoped and points at the repository', () => {
+    // Unscoped on purpose: a scope would require an npm organization.
+    assert.strictEqual(manifest.name, 'sdd-gl');
+    assert.ok(!manifest.name.startsWith('@'), 'the package must stay unscoped');
     assert.strictEqual(manifest.publishConfig.access, 'public');
     assert.match(manifest.repository.url, /github\.com\/CharlyZeta\/SDD-GL/);
     assert.strictEqual(manifest.license, 'MIT');

@@ -218,7 +218,7 @@ Los asistentes de IA tradicionales solo comprueban si el código compila o pasan
 - El agente especializado **`solve-agent`** aplica correcciones quirúrgicas en $\le 3$ intentos acotados sin alterar la lógica de negocio ni la arquitectura, acelerando los tiempos de entrega.
 
 ### 4. 🔌 Estándar Universal Model Context Protocol (MCP)
-- SDD-GL opera como un servidor nativo de **Model Context Protocol** (`@sdd-gl/mcp-server`).
+- SDD-GL opera como un servidor nativo de **Model Context Protocol** (`sdd-gl`).
 - Ejecuta el mismo estándar de gobernanza en **Cursor**, **Windsurf**, **Claude Code y Desktop**, **Google Antigravity CLI & IDE**, **VS Code** (Cline/Roo) y **Zed** sin ataduras a un único proveedor.
 - Expone 8 herramientas estandarizadas: `sdd_create_contract`, `sdd_validate_gate`, `sdd_step_loop`, `sdd_log_ambiguity`, `sdd_get_status`, `sdd_get_metrics`, `sdd_audit_traceability` y `sdd_generate_dashboard`.
 
@@ -293,7 +293,7 @@ Sin necesidad de clonar repositorios manualmente. Añade el servidor MCP directa
   "mcpServers": {
     "sdd-gl": {
       "command": "npx",
-      "args": ["-y", "github:CharlyZeta/SDD-GL"]
+      "args": ["-y", "--package", "github:CharlyZeta/SDD-GL", "sdd-gl-mcp"]
     }
   }
 }
@@ -838,7 +838,7 @@ sdd-gl/
 - [x] **Agente Verificador (`verifier-agent`)**: Ejecución autónoma de verificaciones estáticas, de seguridad y arquitectura.
 - [x] **Métricas de Calidad (`/sdd-metrics`)**: Cálculo en tiempo real de First-Pass Quality Rate (FPQR) y reintentos vía `.sdd/metrics.json`.
 - [x] **Auditoría de Trazabilidad (`/sdd-audit`)**: Detección automática de requisitos huérfanos y código de dominio no especificado.
-- [x] **Servidor MCP Ejecutable (`@sdd-gl/mcp-server`)**: Servidor JSON-RPC estándar en `mcp/server.js` con soporte para todas las herramientas.
+- [x] **Servidor MCP Ejecutable (`sdd-gl`)**: Servidor JSON-RPC estándar en `mcp/server.js` con soporte para todas las herramientas.
 - [x] **Constitución del Proyecto (`CONSTITUTION.md`)**: Guardrails de arquitectura y seguridad no negociables.
 
 ### Versión 0.5.x — Interop, ledgers honestos, atomicidad y CLI real (Publicada)

@@ -6,7 +6,7 @@ Desde cualquier cliente MCP compatible (Claude Code, Cursor, Windsurf, OpenCode)
 
 ```bash
 # Instala el servidor MCP remoto vía npx
-npx -y github:CharlyZeta/SDD-GL
+npx -y --package github:CharlyZeta/SDD-GL sdd-gl-mcp
 
 # Verificar la instalación
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | node ./mcp/server.js
@@ -23,7 +23,7 @@ sdd_get_status         sdd_get_metrics      sdd_audit_traceability   sdd_generat
 
 ```bash
 # Remoto (sin clonar)
-claude mcp add sdd-gl -- npx -y github:CharlyZeta/SDD-GL
+claude mcp add sdd-gl -- npx -y --package github:CharlyZeta/SDD-GL sdd-gl-mcp
 
 # Local (desde la raíz del proyecto SDD-GL)
 claude mcp add sdd-gl -- node ./mcp/server.js
@@ -37,7 +37,7 @@ claude mcp add sdd-gl -- node ./mcp/server.js
   "mcpServers": {
     "sdd-gl": {
       "command": "npx",
-      "args": ["-y", "github:CharlyZeta/SDD-GL"]
+      "args": ["-y", "--package", "github:CharlyZeta/SDD-GL", "sdd-gl-mcp"]
     }
   }
 }
@@ -52,7 +52,7 @@ claude mcp add sdd-gl -- node ./mcp/server.js
   "mcp": {
     "sdd-gl": {
       "type": "local",
-      "command": ["npx", "-y", "github:CharlyZeta/SDD-GL"],
+      "command": ["npx", "-y", "--package", "github:CharlyZeta/SDD-GL", "sdd-gl-mcp"],
       "enabled": true
     }
   }
@@ -182,22 +182,22 @@ npm run dashboard:public       # equivale a: node mcp/dashboard-gen.js --public
 
 ```bash
 # Instalar como dependencia
-npm install @sdd-gl/mcp-server
+npm install sdd-gl
 
 # Luego referenciar en la configuración del cliente
 
 # Claude Code (local):
-claude mcp add sdd-gl -- $(npm bin)/sdd-gl-mcp
+claude mcp add sdd-gl -- npx sdd-gl-mcp
 
 # O usar npx:
-claude mcp add sdd-gl -- npx -y @sdd-gl/mcp-server
+claude mcp add sdd-gl -- npx -y --package sdd-gl sdd-gl-mcp
 
 # Gemini CLI
 {
   "mcpServers": {
     "sdd-gl": {
       "command": "npx",
-      "args": ["-y", "@sdd-gl/mcp-server"]
+      "args": ["-y", "--package", "sdd-gl", "sdd-gl-mcp"]
     }
   }
 }

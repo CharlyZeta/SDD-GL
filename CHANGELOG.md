@@ -145,7 +145,9 @@
 ### Changed — publishable package
 
 - **Curated surface**: `files` now publishes only `mcp/`, `bin/`, `protocol/`, `presets/` and `docs/INSTALACION.md` — 16 files, 96 KB unpacked 316 KB. `contracts/`, `.sdd/`, `test-sandbox/` and the dashboard build stay out of the tarball.
-- **Metadata**: `repository`, `bugs`, `engines` (Node >= 18) and `publishConfig.access = public` (the scoped package publishes publicly without a flag).
+- **Renamed**: the package is now the unscoped `sdd-gl` (it was `@sdd-gl/mcp-server`). The scope required an npm organization the owner did not have, and the bare name was free.
+- **Metadata**: `repository`, `bugs`, `engines` (Node >= 18) and `publishConfig.access = public`.
 - **Two entry points**: `sdd-gl-mcp` (the stdio server) and `sdd` (the CLI). The misleading `sdd-gl` alias that also pointed at the server is gone.
+- **Client snippets**: because there are two bins, every `npx` invocation names the one it wants (`npx -y --package sdd-gl sdd-gl-mcp`); plain `npx sdd-gl` cannot pick a bin.
 - **Safety**: `prepublishOnly` runs the full suite, and a test reads `npm pack --dry-run --json` to assert that private contracts and local state can never ship.
 - **Remaining**: `npm publish` with the owner account.

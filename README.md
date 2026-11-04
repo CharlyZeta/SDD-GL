@@ -217,7 +217,7 @@ Traditional AI assistants only check if code compiles or basic tests pass. SDD-G
 - The specialized **`solve-agent`** performs surgical auto-repairs in $\le 3$ bounded attempts without altering business logic or software architecture, significantly accelerating delivery and cutting LLM token overhead.
 
 ### 4. 🔌 Universal Model Context Protocol (MCP) Standard
-- SDD-GL is a first-class **Model Context Protocol** server (`@sdd-gl/mcp-server`).
+- SDD-GL is a first-class **Model Context Protocol** server (`sdd-gl`).
 - Run the exact same spec-driven governance across **Cursor**, **Windsurf**, **Claude Code & Desktop**, **Google Antigravity CLI & IDE**, **VS Code** (Cline/Roo), and **Zed** with zero lock-in.
 - Exposes 8 standardized tools: `sdd_create_contract`, `sdd_validate_gate`, `sdd_step_loop`, `sdd_log_ambiguity`, `sdd_get_status`, `sdd_get_metrics`, `sdd_audit_traceability`, and `sdd_generate_dashboard`.
 
@@ -292,7 +292,7 @@ No repository cloning needed. Add the MCP server directly from GitHub to your ID
   "mcpServers": {
     "sdd-gl": {
       "command": "npx",
-      "args": ["-y", "github:CharlyZeta/SDD-GL"]
+      "args": ["-y", "--package", "github:CharlyZeta/SDD-GL", "sdd-gl-mcp"]
     }
   }
 }
@@ -837,7 +837,7 @@ sdd-gl/
 - [x] **Verification Agent (`verifier-agent`)**: Executes static, security, and architectural guardrail layers.
 - [x] **Quality Metrics (`/sdd-metrics`)**: Real-time First-Pass Quality Rate (FPQR) and retry tracking via `.sdd/metrics.json`.
 - [x] **Traceability Audit (`/sdd-audit`)**: Automated detection of orphan specs and untracked domain code.
-- [x] **Executable MCP Server (`@sdd-gl/mcp-server`)**: Runnable Node.js JSON-RPC server in `mcp/server.js`.
+- [x] **Executable MCP Server (`sdd-gl`)**: Runnable Node.js JSON-RPC server in `mcp/server.js`.
 - [x] **Project Constitution (`CONSTITUTION.md`)**: Architectural and security guardrails for autonomous loop operations.
 
 ### Version 0.5.x — Interop, honest ledgers, atomicity and a real CLI (Released)
