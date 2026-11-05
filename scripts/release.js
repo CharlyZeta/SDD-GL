@@ -14,6 +14,7 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 const MANIFESTS = ['package.json', 'mcp/package.json', 'plugin.json'];
 const BADGES = ['README.md', 'README.es.md'];
+const ORCHESTRATORS = ['AGENTS.md', 'CLAUDE.md'];
 const SEMVER = /^\d+\.\d+\.\d+$/;
 
 function readJson(relative) {
@@ -26,6 +27,11 @@ function writeJson(relative, value) {
 
 function badgePattern() {
   return /badge\/version-(\d+\.\d+\.\d+)-blue/;
+}
+
+// `**Protocol version: X**` in AGENTS.md and `**Versión del protocolo: X**` in CLAUDE.md.
+function protocolPattern() {
+  return /\*\*(?:Protocol version|Versión del protocolo): (\d+\.\d+\.\d+)\*\*/;
 }
 
 function changelogVersions() {
@@ -44,6 +50,12 @@ function check() {
   }
 
   const version = versions[0].version;
+
+  for (const relative of ORCHESTRATORS) {
+    const match = fs.readFileSync(path.join(ROOT, relative), 'utf8').match(protocolPattern());
+    if (!match) problems.push(`${relative} no declara la versión del protocolo`);
+    else if (match[1] !== version) problems.push(`${relative} declara ${match[1]}, package.json declara ${version}`);
+  }
 
   for (const relative of BADGES) {
     const match = fs.readFileSync(path.join(ROOT, relative), 'utf8').match(badgePattern());
@@ -80,6 +92,17 @@ function setVersion(version) {
     const text = fs.readFileSync(file, 'utf8');
     if (!badgePattern().test(text)) throw new Error(`${relative} no tiene badge de versión`);
     fs.writeFileSync(file, text.replace(badgePattern(), `badge/version-${version}-blue`), 'utf8');
+  }
+
+  for (const relative of ORCHESTRATORS) {
+    const file = path.join(ROOT, relative);
+    const text = fs.readFileSync(file, 'utf8');
+    if (!protocolPattern().test(text)) throw new Error(`${relative} no declara la versión del protocolo`);
+    fs.writeFileSync(
+      file,
+      text.replace(protocolPattern(), match => match.replace(/\d+\.\d+\.\d+/, version)),
+      'utf8'
+    );
   }
 
   return { from: current, to: version };

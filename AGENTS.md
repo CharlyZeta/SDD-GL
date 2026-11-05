@@ -1,6 +1,6 @@
 # SDD-GL Orchestrator (Antigravity)
 
-This file is the SDD-GL orchestrator for Antigravity CLI and Antigravity IDE.
+**Protocol version: 0.6.2** · `protocol/contract.md` · `protocol/gate.md` · `protocol/loop.md`
 For Claude Code, see CLAUDE.md.
 
 ## Identity
@@ -18,15 +18,51 @@ When any SDD-GL work is mentioned:
 0. Detect active behavioral skills in the session (ponytail, karpathy-guidelines, global
    profiles). If any → announce **Interop Mode** and load `protocol/interop.md` for the
    whole work item. If none → interop is a no-op.
-1. Look for Contracts in `contracts/`
-2. If none exist → suggest `/sdd-feature` or `/sdd-fix`
-3. If one exists → read `# Status:` and `# Mode:` from its header
+1. Read the project state: `sdd status` (or read the headers in `contracts/`).
+2. If there are no contracts → offer `sdd new --type FEAT|FIX` (or `/sdd-feature` / `/sdd-fix`).
+3. Route by header:
 
 ```
-Status: DRAFT   + Mode: GATE   → activate sdd-gate skill
-Status: APPROVED + Mode: LOOP  → activate sdd-loop skill
-Status: RESOLVED               → report work item is complete, suggest /sdd-status
+Status: DRAFT    + Mode: GATE → sdd-gate skill
+Status: APPROVED + Mode: LOOP → sdd-loop skill
+Status: RESOLVED              → work item complete; report and stop
 ```
+
+4. `sdd next` returns the ordered next action with the exact command to run.
+
+Never treat `contracts/README.md`, notes or other markdown as contracts: a contract is a
+file with `# ID:` **and** `# Status:` in its header.
+
+---
+
+## Gate: what must be true before asking for approval
+
+A contract is approvable only when `sdd validate <ID>` exits 0 with
+`READY_FOR_APPROVAL`. The Gate enforces, on `DRAFT` only:
+
+| Check | Failure |
+|---|---|
+| `## User Story` with exactly one goal (`Como` / `Quiero` / `Para`) | `STORY_MISSING`, `STORY_MULTI_GOAL` |
+| Size budget: ≤ 7 BR · ≤ 8 AC · ≤ 5 AF · ≤ 9 steps | `BUDGET_EXCEEDED` |
+| No template text left (`[completar]`, `[context]`, …) | `PLACEHOLDER` |
+| Every `AS-XX` in `## Inferred Assumptions` confirmed by the human | `INCOMPLETE` |
+| BR ↔ AC consistency | `CONTRADICTION_DETECTED` |
+
+A contract over budget must be split with `sdd split <ID>` (proposal) or carry an
+explicit `STORY-OK` / `BUDGET-OK` waiver in the Ambiguity Log.
+
+---
+
+## Loop: the map is the state
+
+- `sdd loop <ID>` claims the next `❌` item; `--item NAME --layer LAYER` targets one row.
+- `sdd loop <ID> --pass|--fail --evidence "…"` records the real outcome (never invent it).
+- `sdd loop <ID> --blocked "reason"` logs the ambiguity and returns the contract to DRAFT/GATE.
+- `sdd reconcile <ID>` re-opens only the items whose criterion changed in the spec; the Loop
+  does this automatically before claiming.
+- The Completion Map has one row per criterion and per layer:
+  `# item | layer | test-id | agent | status` with `✅`, `❌` or `⏳`.
+- An item left in `⏳` means the run was interrupted: resume from it, do not restart.
 
 ---
 
@@ -78,6 +114,29 @@ Every skill invocation includes:
 
 ---
 
+## CLI reference (no MCP client required)
+
+```
+sdd init                 Scaffold .sdd/, contracts/ and the config
+sdd status               Every contract with type, state, mode and progress
+sdd new <title>          New contract (--type FEAT|FIX)
+sdd validate <ID>        Gate verdict; exit 0 only when READY
+sdd approve <ID>         DRAFT → APPROVED/LOOP (human decision, records a spec hash)
+sdd next                 Ordered next actions
+sdd loop <ID>            Claim / report an item
+sdd graph                Topological order from depends_on
+sdd split <ID>           Propose the cut of an oversized contract
+sdd reconcile <ID>       Re-open only the criteria that changed
+sdd report <ID>          Work report from the run ledger
+sdd review               Coverage heatmap per contract
+sdd doctor               Environment and contracts diagnostics
+sdd sync                 Check agent parity across platform adapters
+```
+
+`--json` on every read command; exit codes: `0` ok, `1` finding, `2` usage error.
+
+---
+
 ## Expected project structure
 
 ```
@@ -88,10 +147,12 @@ project/
 ├── protocol/
 │   ├── contract.md
 │   ├── gate.md
-│   └── loop.md
-├── contracts/
+│   ├── loop.md
+│   └── interop.md
+├── contracts/         ← specs (a README here is fine; it is not a contract)
 │   ├── FEAT-0001.md
 │   └── FIX-0001.md
+├── .sdd/              ← local state: config, metrics, usage, runs, dashboard
 └── .agents/
     └── skills/
         ├── sdd-gate/
@@ -99,6 +160,7 @@ project/
         ├── sdd-feature/
         ├── sdd-fix/
         ├── sdd-status/
+        ├── sdd-dashboard/
         ├── sdd-requirements-agent/
         ├── sdd-reviewer-agent/
         ├── sdd-coder-agent/

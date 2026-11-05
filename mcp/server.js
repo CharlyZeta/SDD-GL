@@ -327,12 +327,30 @@ function inferContractType(contractId, text, fileName) {
   return 'feature';
 }
 
+// A contract is recognized by its header, not by its extension: `contracts/` may
+// also hold a README or free-form notes that must be ignored.
+function isContractText(text) {
+  return /^#\s*ID:/m.test(text) && /^#\s*Status:/m.test(text);
+}
+
+// Files that *look* like contracts but cannot be read as one are real errors.
+function looksLikeContract(text) {
+  return /^#\s*CONTRACT:/m.test(text);
+}
+
 function listContractFiles() {
   if (!fs.existsSync(CONTRACTS_DIR)) return [];
   return fs
     .readdirSync(CONTRACTS_DIR, { withFileTypes: true })
     .filter(entry => entry.isFile() && entry.name.toLowerCase().endsWith('.md'))
-    .map(entry => entry.name);
+    .map(entry => entry.name)
+    .filter(name => {
+      try {
+        return isContractText(fs.readFileSync(path.join(CONTRACTS_DIR, name), 'utf8'));
+      } catch (error) {
+        return false;
+      }
+    });
 }
 
 // Finds a contract by ID regardless of the file naming convention
@@ -1483,7 +1501,7 @@ ${evidence}
 
     case 'sdd_get_status': {
       if (!fs.existsSync(CONTRACTS_DIR)) return { total_contracts: 0, contracts: [] };
-      const files = fs.readdirSync(CONTRACTS_DIR).filter(f => f.endsWith('.md'));
+      const files = listContractFiles();
 
       const summary = files.map(file => {
         const content = fs.readFileSync(path.join(CONTRACTS_DIR, file), 'utf8');
@@ -1517,7 +1535,7 @@ ${evidence}
       const response = { ...metrics, source };
       if (warning) response.warning = warning;
       if (fs.existsSync(CONTRACTS_DIR)) {
-        response.total_contracts = fs.readdirSync(CONTRACTS_DIR).filter(f => f.endsWith('.md')).length;
+        response.total_contracts = listContractFiles().length;
       } else {
         response.total_contracts = 0;
       }
@@ -1527,7 +1545,7 @@ ${evidence}
     case 'sdd_audit_traceability': {
       // BR-005: real coverage. Nothing here is a fixed value.
       const contractFiles = fs.existsSync(CONTRACTS_DIR)
-        ? fs.readdirSync(CONTRACTS_DIR).filter(file => file.endsWith('.md'))
+        ? listContractFiles()
         : [];
 
       const specs = [];
@@ -1665,7 +1683,7 @@ function main() {
   });
 }
 
-module.exports = { TOOLS, handleToolCall, computeNextContractId, reconcileContract, computeCriteriaHashes };
+module.exports = { TOOLS, handleToolCall, computeNextContractId, reconcileContract, computeCriteriaHashes, isContractText, looksLikeContract };
 
 if (require.main === module) {
   main();

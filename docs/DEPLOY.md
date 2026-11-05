@@ -29,6 +29,7 @@ Ese script actualiza de una sola vez:
 
 - `package.json`, `mcp/package.json`, `plugin.json` y `package-lock.json`
 - el badge de versión en `README.md` y `README.es.md`
+- la línea `Protocol version` de `AGENTS.md` y `CLAUDE.md` (los orquestadores se copian a otros proyectos: si quedan en una versión vieja, el próximo agente arranca con el ciclo viejo)
 - regenera `.sdd/dashboard.html` y `docs/index.html` (el layout muestra la versión)
 
 ## 2. Escribir el changelog

@@ -32,7 +32,7 @@ const ROOT = rootFlag ? path.resolve(rootFlag) : process.cwd();
 
 process.env.SDD_PROJECT_ROOT = ROOT;
 
-const { handleToolCall, TOOLS } = require('../mcp/server.js');
+const { handleToolCall, TOOLS, isContractText, looksLikeContract } = require('../mcp/server.js');
 
 // CLI usage is real usage of the methodology: it is counted and attributed to the
 // contract type it serves (feature/fix) when a contract is involved.
@@ -588,17 +588,28 @@ function commandDoctor() {
 
   const unreadable = [];
   const stalled = [];
+  const ignored = [];
+  let contracts = 0;
 
   if (fs.existsSync(contractsDir)) {
     for (const name of fs.readdirSync(contractsDir).filter(entry => entry.toLowerCase().endsWith('.md'))) {
       const text = fs.readFileSync(path.join(contractsDir, name), 'utf8');
-      if (!/^#\s*ID:/m.test(text) || !/^#\s*Status:/m.test(text)) unreadable.push(name);
+
+      // `contracts/` may also hold a README or notes: only files with a contract
+      // header are counted, and only a broken contract header is a failure.
+      if (!isContractText(text)) {
+        if (looksLikeContract(text)) unreadable.push(name);
+        else ignored.push(name);
+        continue;
+      }
+
+      contracts += 1;
       if (/^\s*#.*\|\s*⏳\s*$/m.test(text)) stalled.push(name);
     }
   }
 
   if (unreadable.length > 0) add('contratos', 'FAIL', `encabezado ilegible: ${unreadable.join(', ')}`);
-  else add('contratos', 'OK', 'todos los encabezados son legibles');
+  else add('contratos', 'OK', `${contracts} contrato(s) legibles${ignored.length ? ` · ignorados: ${ignored.join(', ')}` : ''}`);
 
   if (stalled.length > 0) add('en curso', 'WARN', `ítems en ⏳ (reanudar): ${stalled.join(', ')}`);
   else add('en curso', 'OK', 'sin ítems interrumpidos');
@@ -1320,6 +1331,7 @@ function commandReview() {
 
   for (const file of fs.readdirSync(contractsDir).filter(name => name.toLowerCase().endsWith('.md'))) {
     const text = fs.readFileSync(path.join(contractsDir, file), 'utf8');
+    if (!isContractText(text)) continue;
     const id = (text.match(/^#\s*ID:\s*(\S+)\s*$/m) || [])[1] || file.replace(/\.md$/, '');
     const status = (text.match(/^#\s*Status:\s*(\w+)\s*$/m) || [])[1] || 'UNKNOWN';
     const criteria = readCriteria(text);

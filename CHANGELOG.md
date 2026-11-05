@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.6.2] — 2026-11-05
+
+### Fixed — `contracts/` no longer chokes on a README
+
+- **`sdd doctor` false positive**: it parsed every `*.md` in `contracts/` as a contract, so a `README.md` or a notes file failed with "encabezado ilegible". A contract is now recognized by its header (`# ID:` and `# Status:`); anything else is ignored, and only a file that *looks* like a contract (`# CONTRACT:` without a header) is still reported.
+- **Same leak in `status`, `review`, `metrics` and the dashboard**: they shared the extension-only filter and listed phantom contracts with `UNKNOWN` status. Everything now goes through `listContractFiles()`, which filters by content.
+
+### Changed — orchestrator docs
+
+- `AGENTS.md` and `CLAUDE.md` were frozen at the v0.3.0 cycle: no User Story, no atomicity budget, no CLI. They now declare the protocol version, the Gate verdicts (`STORY_*`, `BUDGET_EXCEEDED`, `PLACEHOLDER`, `CONTRADICTION_DETECTED`), the Loop commands and the 5-column Completion Map.
+- `scripts/release.js` bumps the protocol line in both orchestrators and `--check` fails when they drift, so a stale copy cannot ship.
+- **Tests**: doctor (4) and orchestrator docs (5).
+
 ## [0.6.1] — 2026-11-04
 
 ### Changed — published to npm
