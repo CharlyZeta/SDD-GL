@@ -549,6 +549,10 @@ function commandInit() {
     }
   }
 
+  if (args.includes('--with-agents') || args.includes('--with-orchestrators')) {
+    scaffoldAgentAssets(created, skipped);
+  }
+
   if (wantsJson) {
     console.log(JSON.stringify({ root: ROOT, created, skipped }, null, 2));
     return 0;
@@ -559,6 +563,56 @@ function commandInit() {
   if (skipped.length > 0) skipped.forEach(item => console.log(`  = ${item} (sin cambios)`));
   console.log('\nSiguiente paso: sdd new "tu primera historia"');
   return 0;
+}
+
+// Copies the orchestrators, the protocol and the platform adapters shipped with the
+// package. Existing files are never overwritten: the project owns them.
+const SCAFFOLD_ASSETS = [
+  { path: 'AGENTS.md', kind: 'file' },
+  { path: 'CLAUDE.md', kind: 'file' },
+  { path: 'protocol', kind: 'dir' },
+  { path: '.agents/skills', kind: 'dir' },
+  { path: '.claude/agents', kind: 'dir' },
+  { path: '.claude/commands', kind: 'dir' }
+];
+
+// Project-relative path with forward slashes, so the output reads the same on every OS.
+function displayPath(target) {
+  return path.relative(ROOT, target).split(path.sep).join('/');
+}
+
+function copyMissing(source, target, created, skipped) {
+  const stats = fs.statSync(source);
+
+  if (stats.isDirectory()) {
+    if (!fs.existsSync(target)) fs.mkdirSync(target, { recursive: true });
+    for (const entry of fs.readdirSync(source)) {
+      copyMissing(path.join(source, entry), path.join(target, entry), created, skipped);
+    }
+    return;
+  }
+
+  if (fs.existsSync(target)) {
+    skipped.push(displayPath(target));
+    return;
+  }
+
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.copyFileSync(source, target);
+  created.push(displayPath(target));
+}
+
+function scaffoldAgentAssets(created, skipped) {
+  const packageRoot = path.resolve(__dirname, '..');
+
+  for (const asset of SCAFFOLD_ASSETS) {
+    const source = path.join(packageRoot, asset.path);
+    if (!fs.existsSync(source)) {
+      skipped.push(`${asset.path} (no viene con el paquete)`);
+      continue;
+    }
+    copyMissing(source, path.join(ROOT, asset.path), created, skipped);
+  }
 }
 
 function commandDoctor() {
@@ -615,6 +669,26 @@ function commandDoctor() {
   else add('en curso', 'OK', 'sin ítems interrumpidos');
 
   add('mcp', 'OK', `${TOOLS.length} herramientas disponibles`);
+
+  // A stale orchestrator makes the next agent start with the wrong cycle.
+  const packageVersion = JSON.parse(fs.readFileSync(path.resolve(__dirname, '..', 'package.json'), 'utf8')).version;
+  const protocolPattern = /\*\*(?:Protocol version|Versión del protocolo): (\d+\.\d+\.\d+)\*\*/;
+  const orchestrators = ['AGENTS.md', 'CLAUDE.md'].filter(name => fs.existsSync(path.join(ROOT, name)));
+
+  if (orchestrators.length === 0) {
+    add('orquestadores', 'WARN', 'sin AGENTS.md ni CLAUDE.md — sdd init --with-agents');
+  } else {
+    const outdated = orchestrators.filter(name => {
+      const match = fs.readFileSync(path.join(ROOT, name), 'utf8').match(protocolPattern);
+      return !match || match[1] !== packageVersion;
+    });
+
+    if (outdated.length > 0) {
+      add('orquestadores', 'WARN', `${outdated.join(', ')} no declara ${packageVersion} — sdd init --with-agents`);
+    } else {
+      add('orquestadores', 'OK', `al día con el paquete (${packageVersion})`);
+    }
+  }
 
   const agentsDir = path.join(ROOT, '.claude', 'agents');
   if (fs.existsSync(agentsDir)) {

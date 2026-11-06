@@ -1,6 +1,6 @@
 # SDD-GL Orchestrator
 
-**Versión del protocolo: 0.6.3** · `protocol/contract.md` · `protocol/gate.md` · `protocol/loop.md`
+**Versión del protocolo: 0.6.4** · `protocol/contract.md` · `protocol/gate.md` · `protocol/loop.md`
 Para Antigravity/Antigravity CLI, ver AGENTS.md.
 
 ## Identidad
@@ -137,7 +137,7 @@ El agente nunca lee el Contract por su cuenta. El orquestador siempre se lo entr
 ## Referencia de la CLI (sin cliente MCP)
 
 ```
-sdd init                 Crea .sdd/, contracts/ y la configuración
+sdd init                 Crea .sdd/, contracts/ y la configuración (--with-agents: orquestadores + adaptadores)
 sdd status               Cada contrato con tipo, estado, modo y progreso
 sdd new <título>         Contrato nuevo (--type FEAT|FIX)
 sdd validate <ID>        Veredicto del Gate; exit 0 solo si READY

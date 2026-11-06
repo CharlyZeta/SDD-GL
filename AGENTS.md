@@ -1,6 +1,6 @@
 # SDD-GL Orchestrator (Antigravity)
 
-**Protocol version: 0.6.3** · `protocol/contract.md` · `protocol/gate.md` · `protocol/loop.md`
+**Protocol version: 0.6.4** · `protocol/contract.md` · `protocol/gate.md` · `protocol/loop.md`
 For Claude Code, see CLAUDE.md.
 
 ## Identity
@@ -117,7 +117,7 @@ Every skill invocation includes:
 ## CLI reference (no MCP client required)
 
 ```
-sdd init                 Scaffold .sdd/, contracts/ and the config
+sdd init                 Scaffold .sdd/, contracts/ and the config (--with-agents: orchestrators + adapters)
 sdd status               Every contract with type, state, mode and progress
 sdd new <title>          New contract (--type FEAT|FIX)
 sdd validate <ID>        Gate verdict; exit 0 only when READY

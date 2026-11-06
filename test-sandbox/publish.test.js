@@ -87,12 +87,29 @@ describe('Publish — release consistency', () => {
 });
 
 describe('Publish — tarball contents', () => {
-  test('ships the tool and the protocol', () => {
+  test('ships the tool, the protocol and the orchestrators', () => {
     const files = pack().files.map(entry => entry.path);
 
-    for (const required of ['mcp/server.js', 'mcp/dashboard-gen.js', 'bin/sdd.js', 'protocol/contract.md', 'README.md', 'LICENSE']) {
+    for (const required of [
+      'mcp/server.js',
+      'mcp/dashboard-gen.js',
+      'bin/sdd.js',
+      'protocol/contract.md',
+      'AGENTS.md',
+      'CLAUDE.md',
+      'README.md',
+      'LICENSE'
+    ]) {
       assert.ok(files.includes(required), `${required} must be published`);
     }
+  });
+
+  test('ships the agent adapters so init can scaffold them', () => {
+    const files = pack().files.map(entry => entry.path);
+
+    assert.ok(files.some(file => file.startsWith('.agents/skills/')), 'the skills must ship');
+    assert.ok(files.some(file => file.startsWith('.claude/agents/')), 'the agent adapters must ship');
+    assert.ok(files.some(file => file.startsWith('.claude/commands/')), 'the commands must ship');
   });
 
   test('never ships contracts, state, tests or the dashboard build', () => {
@@ -109,7 +126,8 @@ describe('Publish — tarball contents', () => {
   test('stays small and declares a runtime', () => {
     const details = pack();
 
-    assert.ok(details.entryCount <= 40, `expected a curated tarball, got ${details.entryCount} files`);
+    // 44 entries: the tool, the protocol, the presets and the agent adapters.
+    assert.ok(details.entryCount <= 60, `expected a curated tarball, got ${details.entryCount} files`);
     assert.ok(details.unpackedSize < 2_000_000, 'the tarball must stay under 2 MB');
     assert.match(manifest.engines.node, />=18/);
   });

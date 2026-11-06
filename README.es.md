@@ -3,7 +3,7 @@
 ![SDD-GL Portada](assets/sdd-gl-cover.png)
 
 [![npm](https://img.shields.io/npm/v/sdd-gl)](https://www.npmjs.com/package/sdd-gl)
-[![Version](https://img.shields.io/badge/version-0.6.3-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.6.4-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![MCP Protocol](https://img.shields.io/badge/MCP-Protocol%20Ready-purple)](mcp/sdd-gl-mcp-spec.md)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-orange)](https://docs.claude.ai/code)
@@ -290,8 +290,10 @@ Sigue esta guía paso a paso para configurar y comenzar a utilizar SDD-GL en tu 
 Publicado como **`sdd-gl`** en npm — sin clonar ni spec de GitHub:
 
 ```bash
-npm install -g sdd-gl      # instala dos comandos: sdd (CLI) y sdd-gl-mcp (servidor)
-sdd --help                 # verificar
+npm install -g sdd-gl               # dos comandos: sdd (CLI) y sdd-gl-mcp (servidor)
+cd mi-proyecto
+sdd init --with-agents          # .sdd/, contracts/ y los orquestadores + adaptadores
+sdd status
 ```
 
 Para la configuración de un cliente MCP, apuntá al binario del servidor:
@@ -393,7 +395,7 @@ El mismo core está disponible como CLI, así SDD-GL funciona en una terminal o 
 
 | Comando | Qué hace |
 | :--- | :--- |
-| `sdd init` | prepara el proyecto (`.sdd/config.json`, `contracts/`, `CONSTITUTION.md`); `--private` deja los contratos fuera de git |
+| `sdd init [--with-agents]` | prepara el proyecto (`.sdd/config.json`, `contracts/`, `CONSTITUTION.md`); `--with-agents` además copia los orquestadores, el protocolo y los adaptadores; `--private` deja los contratos fuera de git |
 | `sdd doctor` | diagnóstico de la instalación con OK / WARN / FAIL y cómo corregir cada hallazgo |
 | `sdd status` | todos los contratos con estado, modo y progreso del Completion Map |
 | `sdd new "historia"` | crea un contrato (`--type FEAT\|FIX`, `--gate EXPRESS\|STRICT`) |

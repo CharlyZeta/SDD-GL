@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.4] — 2026-11-06
+
+### Added — the orchestrators ship with the package
+
+- **`sdd init --with-agents`** scaffolds `AGENTS.md`, `CLAUDE.md`, `protocol/`, `.agents/skills/` (14), `.claude/agents/` (6) and `.claude/commands/` (6) into the project. It never overwrites: existing files are reported as skipped, so a project that already customised its orchestrator keeps them.
+- **The package now carries those assets**, so a fresh install no longer starts from a hand-copied, possibly stale `AGENTS.md`. The tarball grows from 16 to 44 files (115 KB packed).
+- The scaffolded `AGENTS.md`/`CLAUDE.md` declare the version being released, because `release.js` bumps that line in the same commit.
+- **Tests**: init scaffold (5) — contents, copied version, `sdd sync` green in the scaffolded project, no overwrite and plain `init` unchanged.
 ## [0.6.3] — 2026-11-06
 
 ### Fixed — the published README contradicted itself
