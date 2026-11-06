@@ -1,6 +1,6 @@
 {
   "name": "sdd-gl",
-  "version": "0.6.2",
+  "version": "0.6.3",
   "description": "Model Context Protocol (MCP) Server for Spec-Driven Development (SDD-GL)",
   "main": "server.js",
   "bin": {

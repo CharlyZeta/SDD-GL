@@ -1,6 +1,6 @@
 # SDD-GL Orchestrator (Antigravity)
 
-**Protocol version: 0.6.2** · `protocol/contract.md` · `protocol/gate.md` · `protocol/loop.md`
+**Protocol version: 0.6.3** · `protocol/contract.md` · `protocol/gate.md` · `protocol/loop.md`
 For Claude Code, see CLAUDE.md.
 
 ## Identity

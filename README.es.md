@@ -3,7 +3,7 @@
 ![SDD-GL Portada](assets/sdd-gl-cover.png)
 
 [![npm](https://img.shields.io/npm/v/sdd-gl)](https://www.npmjs.com/package/sdd-gl)
-[![Version](https://img.shields.io/badge/version-0.6.2-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.6.3-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![MCP Protocol](https://img.shields.io/badge/MCP-Protocol%20Ready-purple)](mcp/sdd-gl-mcp-spec.md)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-orange)](https://docs.claude.ai/code)
@@ -778,8 +778,7 @@ Ciclo 3: AC-001 ✅, AC-002 ✅, AC-003 ✅ → Estado final: RESOLVED
 - No garantiza la idoneidad ni calidad de las pruebas si el contrato de origen posee fallos lógicos o está mal redactado.
 - Requiere de un runtime compatible (como Claude Code o Antigravity CLI) para ejecutar los flujos del agente.
 
-### Limitaciones Conocidas (Versión 0.5.4)
-* **No publicado en npm**: el binario `sdd` se distribuye en el repositorio (y vía `npx github:CharlyZeta/SDD-GL`); el paquete no está en el registro.
+### Limitaciones Conocidas
 * **Los borradores del split necesitan una persona**: `sdd split --write` crea los stubs con los criterios asignados, pero la User Story y el Main Flow de cada parte se escriben a mano antes de aprobar.
 * **La reconciliación es textual**: el hash cubre el texto normalizado del criterio, así que reformular una regla sin cambiar su significado también reabre el ítem.
 
@@ -791,7 +790,7 @@ Ciclo 3: AC-001 ✅, AC-002 ✅, AC-003 ✅ → Estado final: RESOLVED
 sdd-gl/
 ├── README.md                ← Documentación principal (inglés).
 ├── README.es.md             ← Documentación completa en español.
-├── CHANGELOG.md             ← Historial de versiones (actual: 0.5.2).
+├── CHANGELOG.md             ← Historial de versiones, la más nueva arriba.
 ├── plugin.json              ← Manifiesto del plugin y multiplataforma.
 ├── package.json             ← Manifiesto del paquete, scripts y el binario `sdd`.
 ├── package-lock.json        ← Árbol de dependencias bloqueado (CI usa `npm ci`).
@@ -800,7 +799,7 @@ sdd-gl/
 ├── CONSTITUTION.md          ← Leyes arquitectónicas y guardrails de seguridad.
 ├── LICENSE                  ← MIT.
 ├── bin/
-│   └── sdd.js               ← CLI: init, status, new, validate, next, report, approve, loop, graph, sync, doctor.
+│   └── sdd.js               ← CLI: init, status, new, validate, next, report, approve, loop, graph, split, reconcile, review, sync, doctor.
 ├── docs/
 │   ├── index.html           ← Dashboard público del showcase (solo examples/, nunca los contratos privados).
 │   ├── INSTALACION.md       ← Instalación paso a paso por plataforma.
@@ -889,7 +888,7 @@ sdd-gl/
 
 - [x] `files`, `repository`, `engines` y `publishConfig` curados; `prepublishOnly` corre la suite antes de publicar.
 - [x] Un test verifica que el tarball lleve la herramienta y nunca `contracts/`, `.sdd/` ni `test-sandbox/`.
-- [ ] Ejecutar `npm publish` con la cuenta del dueño.
+- [x] Publicado en npm como `sdd-gl` (0.6.0 primero, 0.6.2 actual). Las próximas versiones siguen `docs/DEPLOY.md`.
 
 ### Backlog de Ideas
 - [ ] Integración nativa con sistemas de tickets e incidencias (GitHub Issues, Linear, Jira).
@@ -972,7 +971,7 @@ Adicionalmente, Antigravity soporta detección de intención mediante lenguaje n
 | **Definición de Comandos** | `.claude/commands/*.md` | `.agents/skills/*/SKILL.md` |
 | **Definición de Agentes** | `.claude/agents/*.md` | `.agents/skills/*/SKILL.md` |
 | **Mapeo de Activación** | `/comando` explícito | Comandos explícitos o detección de lenguaje natural |
-| **Modelo Recomendado** | Claude 3.5 Sonnet | Gemini 1.5 Pro / Flash |
+| **Modelo Recomendado** | Cualquier modelo de frontera actual con tool calling (familia Claude, Gemini, GPT) |
 | **Protocolo Operativo** | Carpeta `protocol/` (Idéntico) | Carpeta `protocol/` (Idéntico) |
 | **Ubicación de Contratos**| Carpeta `contracts/` (Idéntico) | Carpeta `contracts/` (Idéntico) |
 

@@ -1,6 +1,6 @@
 # SDD-GL Orchestrator
 
-**Versión del protocolo: 0.6.2** · `protocol/contract.md` · `protocol/gate.md` · `protocol/loop.md`
+**Versión del protocolo: 0.6.3** · `protocol/contract.md` · `protocol/gate.md` · `protocol/loop.md`
 Para Antigravity/Antigravity CLI, ver AGENTS.md.
 
 ## Identidad

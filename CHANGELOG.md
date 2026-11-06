@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.6.3] — 2026-11-06
+
+### Fixed — the published README contradicted itself
+
+- **Publish status**: Known Limitations still said "not published to npm" and the 0.6.0 roadmap kept `npm publish` unchecked, while the badge and Method 0 already linked to the package. The package is live; both claims are corrected.
+- **Version drift in prose**: the limitations heading said 0.5.4 and the tree said "CHANGELOG current: 0.5.2". Version literals were removed from prose; the badge, the orchestrators and the CHANGELOG are the only carriers, and `release.js --check` guards them.
+- **CLI coverage**: the tree listed eleven commands and the usage table fourteen. Both now list the full set (`init`, `status`, `new`, `validate`, `next`, `report`, `approve`, `loop`, `graph`, `split`, `reconcile`, `review`, `sync`, `doctor`).
+- **Agent count**: the 0.1.0 roadmap said "four bundled agents" without context; it now reads "four at the time, six today".
+- **Model recommendation**: "Claude 3.5 Sonnet / Gemini 1.5 Pro" was dated; it now asks for any current frontier model with tool calling.
+- **Guard**: `docs-consistency.test.js` (7) checks publish status, version-free prose, the real skill/command/agent counts against disk and `sdd sync`, and that every CLI command from `--help` appears in the README and in the tree.
 ## [0.6.2] — 2026-11-05
 
 ### Fixed — `contracts/` no longer chokes on a README

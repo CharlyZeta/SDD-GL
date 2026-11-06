@@ -3,7 +3,7 @@
 ![SDD-GL Cover](assets/sdd-gl-cover.png)
 
 [![npm](https://img.shields.io/npm/v/sdd-gl)](https://www.npmjs.com/package/sdd-gl)
-[![Version](https://img.shields.io/badge/version-0.6.2-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.6.3-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![MCP Protocol](https://img.shields.io/badge/MCP-Protocol%20Ready-purple)](mcp/sdd-gl-mcp-spec.md)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-orange)](https://docs.claude.ai/code)
@@ -777,8 +777,7 @@ Cycle 3: AC-001 ✅, AC-002 ✅, AC-003 ✅ → Final Status: RESOLVED
 - It does not guarantee test quality if the underlying contract has logical flaws or is poorly written.
 - It requires a compatible runtime (such as Claude Code or Antigravity CLI) to run the agent workflows.
 
-### Known Limitations (Version 0.5.4)
-* **Not published to npm**: the `sdd` binary ships in the repository (and via `npx github:CharlyZeta/SDD-GL`); the package is not on the registry yet.
+### Known Limitations
 * **Split drafts need a human**: `sdd split --write` creates the stubs with the assigned criteria, but the User Story and the Main Flow of each part must be written by hand before approval.
 * **Reconciliation is textual**: the hash covers the normalized criterion text, so rewording a rule without changing its meaning still re-opens that item.
 
@@ -790,7 +789,7 @@ Cycle 3: AC-001 ✅, AC-002 ✅, AC-003 ✅ → Final Status: RESOLVED
 sdd-gl/
 ├── README.md                ← Main documentation (English).
 ├── README.es.md             ← Complete documentation in Spanish.
-├── CHANGELOG.md             ← Version history (current: 0.5.2).
+├── CHANGELOG.md             ← Version history, newest first.
 ├── plugin.json              ← Plugin and multi-platform manifest.
 ├── package.json             ← Package manifest, scripts and the `sdd` binary.
 ├── package-lock.json        ← Locked dependency tree (CI uses `npm ci`).
@@ -799,7 +798,7 @@ sdd-gl/
 ├── CONSTITUTION.md          ← Architectural laws and security guardrails.
 ├── LICENSE                  ← MIT.
 ├── bin/
-│   └── sdd.js               ← CLI: init, status, new, validate, next, report, approve, loop, graph, sync, doctor.
+│   └── sdd.js               ← CLI: init, status, new, validate, next, report, approve, loop, graph, split, reconcile, review, sync, doctor.
 ├── docs/
 │   ├── index.html           ← Public showcase dashboard (examples/ only, never the private contracts).
 │   ├── INSTALACION.md       ← Step-by-step installation per platform.
@@ -844,7 +843,7 @@ sdd-gl/
 - [x] Gate/Loop core state machine and selective governance model.
 - [x] Inferred completion criteria and Ambiguity Log escalation.
 - [x] Item-by-item state persistence and crash recovery.
-- [x] Four bundled agents and base CLI commands (`/sdd-feature`, `/sdd-fix`, `/sdd-status`).
+- [x] Four bundled agents (six today) and base CLI commands (`/sdd-feature`, `/sdd-fix`, `/sdd-status`).
 
 ### Version 0.2.0 — Multi-Platform & Architectural Resilience (Released)
 - [x] Native Antigravity CLI and Antigravity IDE support (`AGENTS.md` + 9 specialized skills).
@@ -888,7 +887,7 @@ sdd-gl/
 
 - [x] Curated `files`, `repository`, `engines` and `publishConfig`; `prepublishOnly` runs the suite before any publish.
 - [x] A test asserts that the tarball ships the tool and never `contracts/`, `.sdd/` or `test-sandbox/`.
-- [ ] Run `npm publish` with the owner account.
+- [x] Published to npm as `sdd-gl` (0.6.0 first, 0.6.2 current). Future releases follow `docs/DEPLOY.md`.
 
 ### Ideas Backlog
 - [ ] Native integration with issue tracking systems (GitHub Issues, Linear, Jira).
@@ -971,7 +970,7 @@ Additionally, Antigravity supports natural language intent detection, routing yo
 | **Command Definitions** | `.claude/commands/*.md` | `.agents/skills/*/SKILL.md` |
 | **Agent Definitions** | `.claude/agents/*.md` | `.agents/skills/*/SKILL.md` |
 | **Activation Mapping** | Explicit `/command` | Explicit command or natural language intent |
-| **Recommended Model** | Claude 3.5 Sonnet | Gemini 1.5 Pro / Flash |
+| **Recommended Model** | Any current frontier model with tool calling (Claude, Gemini, GPT family) |
 | **Operational Protocol** | `protocol/` directory (Identical) | `protocol/` directory (Identical) |
 | **Contract Directory** | `contracts/` directory (Identical) | `contracts/` directory (Identical) |
 
